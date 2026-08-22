@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Aide à la décision{% endblock %}
+{% block page_title %}<i class="bi bi-robot"></i> Centre d'aide à la décision{% endblock %}
+{% block content %}
+
+<div class="row g-3 mb-3">
+  <div class="col-12">
+    <div class="card card-kpi">
+      <div class="card-body">
+        <h5><i class="bi bi-exclamation-triangle text-danger"></i> Alertes intelligentes</h5>
+        {% if alertes %}
+          {% for a in alertes %}
+          <div class="alert alert-{{ a.niveau }} d-flex justify-content-between align-items-center py-2 mb-2">
+            <div><strong>{{ a.titre }}</strong> — {{ a.message }}</div>
+            {% if a.lien %}<a href="{{ a.lien }}" class="btn btn-sm btn-outline-{{ a.niveau }}">Ouvrir</a>{% endif %}
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-muted mb-0"><i class="bi bi-check-circle text-success"></i>
+            Aucune alerte : stocks sains, aucun risque SLA, charge équilibrée.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card card-kpi h-100">
+      <div class="card-body">
+        <h5><i class="bi bi-diagram-3 text-primary"></i> Recommandations d'affectation</h5>
+        <p class="text-muted small">Pour chaque demande en attente, le système évalue les techniciens
+          selon 4 critères : compétences (40 pts), disponibilité (25 pts), charge (25 pts), zone (10 pts).</p>
+        {% if recommandations %}
+          {% for r in recommandations %}
+          <div class="border rounded p-3 mb-3">
+            <div class="d-flex justify-content-between">
+              <div>
+                <strong>#{{ r.demande.id }} — {{ r.demande.titre }}</strong><br>
+                <small class="text-muted">{{ r.demande.type_intervention }} · {{ r.demande.localisation or '—' }} ·
+                  Échéance : {{ r.demande.date_echeance.strftime('%d/%m/%Y') if r.demande.date_echeance else '—' }}</small>
+              </div>
+              <div class="text-end">
+                <span class="badge badge-{{ r.demande.priorite }}">{{ r.demande.priorite }}</span><br>
+                <small class="text-muted">Priorité IA suggérée : <strong>{{ r.priorite_suggeree }}</strong>
+                  ({{ r.score_priorite }}/100)</small>
+              </div>
+            </div>
+            <hr class="my-2">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <div>
+                <i class="bi bi-star-fill text-warning"></i>
+                <strong>{{ r.meilleur.technicien.nom }}</strong>
+                <span class="badge text-bg-success">{{ r.meilleur.score }}/100</span>
+                <small class="text-muted">— {{ r.meilleur.technicien.specialite }} · {{ r.meilleur.technicien.zone }}</small>
+              </div>
+              <a href="{{ url_for('demandes.detail', demande_id=r.demande.id) }}"
+                 class="btn btn-sm btn-success"><i class="bi bi-calendar-plus"></i> Planifier</a>
+            </div>
+            {% if r.alternatives %}
+            <small class="text-muted d-block mt-1">Alternatives :
+              {% for alt in r.alternatives %}
+                {{ alt.technicien.nom }} ({{ alt.score }}/100){% if not loop.last %} · {% endif %}
+              {% endfor %}</small>
+            {% endif %}
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-muted mb-0"><i class="bi bi-check-circle text-success"></i>
+            Toutes les demandes sont planifiées.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card card-kpi h-100">
+      <div class="card-body">
+        <h5><i class="bi bi-box-seam text-warning"></i> Prévisions de consommation des pièces</h5>
+        <p class="text-muted small">Basées sur la consommation moyenne des 30 derniers jours.</p>
+        <table class="table table-sm align-middle">
+          <thead><tr>
+            <th>Pièce</th><th class="text-center">Stock</th>
+            <th class="text-center">Conso./interv.</th><th class="text-center">Couverture</th><th>Risque</th>
+          </tr></thead>
+          <tbody>
+          {% for pv in previsions %}
+            <tr>
+              <td>{{ pv.piece.nom }}<br><small class="text-muted">{{ pv.piece.reference }}</small></td>
+              <td class="text-center">{{ pv.piece.quantite }}</td>
+              <td class="text-center">{{ pv.conso_par_interv }}</td>
+              <td class="text-center">
+                {{ pv.interv_couvertes ~ ' interv.' if pv.interv_couvertes is not none else '—' }}</td>
+              <td><span class="badge text-bg-{{ 'danger' if pv.risque == 'Élevé' else ('warning' if pv.risque == 'Moyen' else 'success') }}">
+                {{ pv.risque }}</span></td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

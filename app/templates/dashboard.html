@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Tableau de bord{% endblock %}
+{% block page_title %}Tableau de bord{% endblock %}
+{% block content %}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-2"><div class="card card-kpi"><div class="card-body text-center">
+    <div class="value text-primary">{{ stats.nb_demandes }}</div><small class="text-muted">Demandes</small></div></div></div>
+  <div class="col-6 col-md-2"><div class="card card-kpi"><div class="card-body text-center">
+    <div class="value" style="color:#6f42c1">{{ stats.nb_nouvelles }}</div><small class="text-muted">Nouvelles</small></div></div></div>
+  <div class="col-6 col-md-2"><div class="card card-kpi"><div class="card-body text-center">
+    <div class="value text-warning">{{ stats.nb_actives }}</div><small class="text-muted">En cours</small></div></div></div>
+  <div class="col-6 col-md-2"><div class="card card-kpi"><div class="card-body text-center">
+    <div class="value text-success">{{ stats.nb_terminees }}</div><small class="text-muted">Terminées</small></div></div></div>
+  <div class="col-6 col-md-2"><div class="card card-kpi"><div class="card-body text-center">
+    <div class="value text-info">{{ stats.nb_techniciens }}</div><small class="text-muted">Techniciens</small></div></div></div>
+  <div class="col-6 col-md-2"><div class="card card-kpi"><div class="card-body text-center">
+    <div class="value text-danger">{{ stats.nb_pieces_alerte }}</div><small class="text-muted">Alertes stock</small></div></div></div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card card-kpi h-100"><div class="card-body">
+      <h6 class="text-muted">Taux de résolution</h6>
+      <div class="display-6 fw-bold text-success">{{ kpis.taux_resolution }}%</div>
+      <div class="progress mt-2" style="height:8px">
+        <div class="progress-bar bg-success" style="width:{{ kpis.taux_resolution }}%"></div>
+      </div>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="card card-kpi h-100"><div class="card-body">
+      <h6 class="text-muted">Durée moyenne de résolution</h6>
+      <div class="display-6 fw-bold text-primary">{{ kpis.duree_moyenne }} h</div>
+      <small class="text-muted">Du début à la clôture de l'intervention</small>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="card card-kpi h-100"><div class="card-body">
+      <h6 class="text-muted">Demandes en retard (SLA)</h6>
+      <div class="display-6 fw-bold {{ 'text-danger' if kpis.nb_demandes_retard else 'text-success' }}">
+        {{ kpis.nb_demandes_retard }}</div>
+      <small class="text-muted">Taux de retard : {{ kpis.taux_retard }}%</small>
+    </div></div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-7">
+    <div class="card card-kpi h-100"><div class="card-body">
+      <h6><i class="bi bi-bar-chart"></i> Interventions planifiées (6 derniers mois)</h6>
+      <canvas id="chartMois" height="160"></canvas>
+    </div></div>
+  </div>
+  <div class="col-md-5">
+    <div class="card card-kpi h-100"><div class="card-body">
+      <h6><i class="bi bi-pie-chart"></i> Répartition par statut</h6>
+      <canvas id="chartStatut" height="160"></canvas>
+    </div></div>
+  </div>
+</div>
+
+<div class="row g-3 mt-1">
+  <div class="col-md-6">
+    <div class="card card-kpi h-100"><div class="card-body">
+      <h6><i class="bi bi-bell"></i> Alertes intelligentes
+        <a href="{{ url_for('main.intelligence_page') }}" class="float-end small">Tout voir →</a></h6>
+      {% if alertes %}
+        {% for a in alertes %}
+        <div class="alert alert-{{ a.niveau }} py-2 mb-2">
+          <strong>{{ a.titre }}</strong> — {{ a.message }}
+          {% if a.lien %}<a href="{{ a.lien }}" class="alert-link">Détails</a>{% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="text-muted"><i class="bi bi-check-circle"></i> Aucune alerte. Situation nominale.</p>
+      {% endif %}
+    </div></div>
+  </div>
+  <div class="col-md-6">
+    <div class="card card-kpi h-100"><div class="card-body">
+      <h6><i class="bi bi-clock-history"></i> Dernières demandes</h6>
+      <ul class="list-group list-group-flush">
+        {% for d in demandes_recentes %}
+        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+          <a href="{{ url_for('demandes.detail', demande_id=d.id) }}">#{{ d.id }} — {{ d.titre }}</a>
+          <span>
+            <span class="badge badge-{{ d.priorite }}">{{ d.priorite }}</span>
+            <span class="badge badge-{{ d.statut.replace(' ', '-') }}">{{ d.statut }}</span>
+          </span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+new Chart(document.getElementById('chartMois'), {
+  type: 'bar',
+  data: { labels: {{ mois_labels | tojson }},
+    datasets: [{ label: 'Interventions', data: {{ mois_data | tojson }},
+      backgroundColor: '#00843d', borderRadius: 6 }] },
+  options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+});
+new Chart(document.getElementById('chartStatut'), {
+  type: 'doughnut',
+  data: { labels: {{ statuts | tojson }},
+    datasets: [{ data: {{ par_statut | tojson }},
+      backgroundColor: ['#0dcaf0', '#ffc107', '#198754', '#6c757d'] }] },
+  options: { plugins: { legend: { position: 'bottom' } } }
+});
+</script>
+{% endblock %}
