@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Stock{% endblock %}
+{% block page_title %}Stock des pièces détachées{% endblock %}
+{% block content %}
+{% if nb_alertes %}
+<div class="alert alert-warning">
+  <i class="bi bi-exclamation-triangle"></i>
+  <strong>{{ nb_alertes }} pièce(s)</strong> sous le seuil d'alerte — réapprovisionnement recommandé.
+</div>
+{% endif %}
+<div class="card card-kpi">
+  <div class="card-body">
+    <div class="d-flex justify-content-end mb-3">
+      <a href="{{ url_for('stock.nouvelle') }}" class="btn btn-success btn-sm">
+        <i class="bi bi-plus-circle"></i> Nouvelle pièce</a>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead><tr>
+          <th>Référence</th><th>Pièce</th><th>Stock</th><th>Seuil</th>
+          <th>Prix unitaire</th><th>Réappro.</th><th></th>
+        </tr></thead>
+        <tbody>
+        {% for p in pieces %}
+          <tr class="{{ 'table-danger' if p.en_alerte }}">
+            <td><code>{{ p.reference }}</code></td>
+            <td>{{ p.nom }}
+              {% if p.en_alerte %}<span class="badge text-bg-danger">STOCK BAS</span>{% endif %}</td>
+            <td><strong>{{ p.quantite }}</strong></td>
+            <td>{{ p.seuil_alerte }}</td>
+            <td>{{ '%.2f' | format(p.prix_unitaire) }} MAD</td>
+            <td>
+              <form method="post" class="d-flex gap-1"
+                    action="{{ url_for('stock.ajuster', piece_id=p.id) }}">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="number" name="delta" class="form-control form-control-sm"
+                       style="width: 80px" value="10" min="1">
+                <button class="btn btn-sm btn-outline-success" title="Ajouter au stock">
+                  <i class="bi bi-plus-lg"></i></button>
+              </form>
+            </td>
+            <td class="text-end">
+              <a href="{{ url_for('stock.modifier', piece_id=p.id) }}"
+                 class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+              {% if current_user.is_admin %}
+              <form method="post" class="d-inline"
+                    action="{{ url_for('stock.supprimer', piece_id=p.id) }}"
+                    onsubmit="return confirm('Supprimer cette pièce ?')">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7" class="text-center text-muted">Aucune pièce en stock.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
