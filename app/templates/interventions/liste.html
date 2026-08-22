@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Interventions{% endblock %}
+{% block page_title %}Interventions{% endblock %}
+{% block content %}
+<div class="card card-kpi">
+  <div class="card-body">
+    <form class="d-flex gap-2 mb-3" method="get">
+      <select name="statut" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+        <option value="">Tous les statuts</option>
+        {% for s in statuts %}
+        <option value="{{ s }}" {{ 'selected' if s == statut }}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </form>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead><tr>
+          <th>#</th><th>Demande</th><th>Technicien</th><th>Priorité</th>
+          <th>Date planifiée</th><th>Statut</th><th></th>
+        </tr></thead>
+        <tbody>
+        {% for iv in interventions %}
+          <tr>
+            <td>{{ iv.id }}</td>
+            <td>{{ iv.demande.titre }}</td>
+            <td>{{ iv.technicien.nom }}</td>
+            <td><span class="badge badge-{{ iv.demande.priorite }}">{{ iv.demande.priorite }}</span></td>
+            <td>{{ iv.date_planifiee.strftime('%d/%m/%Y') }}</td>
+            <td><span class="badge badge-{{ iv.statut.replace(' ', '-') }}">{{ iv.statut }}</span></td>
+            <td><a href="{{ url_for('interventions.detail', intervention_id=iv.id) }}"
+                   class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i> Suivre</a></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7" class="text-center text-muted">Aucune intervention.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Intervention #{{ iv.id }}{% endblock %}
+{% block page_title %}Intervention #{{ iv.id }} — {{ iv.demande.titre }}{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <!-- Suivi temps réel -->
+  <div class="col-lg-5">
+    <div class="card card-kpi mb-3">
+      <div class="card-body">
+        <h5><i class="bi bi-geo-alt"></i> Suivi en temps réel</h5>
+        <table class="table table-sm">
+          <tr><th>Demande</th><td><a href="{{ url_for('demandes.detail', demande_id=iv.demande.id) }}">
+            #{{ iv.demande.id }} — {{ iv.demande.titre }}</a></td></tr>
+          <tr><th>Priorité</th><td><span class="badge badge-{{ iv.demande.priorite }}">{{ iv.demande.priorite }}</span></td></tr>
+          <tr><th>Technicien</th><td>{{ iv.technicien.nom }}
+            <small class="text-muted">({{ iv.technicien.zone }} · {{ iv.technicien.telephone }})</small></td></tr>
+          <tr><th>Localisation</th><td>{{ iv.demande.localisation or '—' }}</td></tr>
+          <tr><th>Date planifiée</th><td>{{ iv.date_planifiee.strftime('%d/%m/%Y') }}</td></tr>
+          <tr><th>Début</th><td>{{ iv.date_debut.strftime('%d/%m/%Y %H:%M') if iv.date_debut else '—' }}</td></tr>
+          <tr><th>Fin</th><td>{{ iv.date_fin.strftime('%d/%m/%Y %H:%M') if iv.date_fin else '—' }}</td></tr>
+          <tr><th>Durée</th><td>{{ iv.duree_heures() ~ ' h' if iv.duree_heures() else '—' }}</td></tr>
+          <tr><th>Statut</th><td><span class="badge badge-{{ iv.statut.replace(' ', '-') }} fs-6">{{ iv.statut }}</span></td></tr>
+        </table>
+        <form method="post" action="{{ url_for('interventions.changer_statut', intervention_id=iv.id) }}"
+              class="d-flex gap-2">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <select name="statut" class="form-select form-select-sm">
+            {% for s in statuts %}
+            <option value="{{ s }}" {{ 'selected' if s == iv.statut }}>{{ s }}</option>
+            {% endfor %}
+          </select>
+          <button class="btn btn-sm btn-primary"><i class="bi bi-arrow-repeat"></i> Mettre à jour</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Pièces utilisées -->
+    <div class="card card-kpi">
+      <div class="card-body">
+        <h5><i class="bi bi-box-seam"></i> Pièces détachées utilisées</h5>
+        <table class="table table-sm">
+          <thead><tr><th>Pièce</th><th>Qté</th><th>Coût</th></tr></thead>
+          <tbody>
+            {% for u in iv.pieces_utilisees %}
+            <tr><td>{{ u.piece.nom }}</td><td>{{ u.quantite }}</td>
+                <td>{{ '%.2f' | format(u.quantite * u.piece.prix_unitaire) }} MAD</td></tr>
+            {% else %}
+            <tr><td colspan="3" class="text-muted">Aucune pièce utilisée.</td></tr>
+            {% endfor %}
+          </tbody>
+          {% if iv.pieces_utilisees %}
+          <tfoot><tr><th colspan="2">Total</th><th>{{ '%.2f' | format(iv.cout_pieces()) }} MAD</th></tr></tfoot>
+          {% endif %}
+        </table>
+        {% if current_user.is_planificateur and pieces %}
+        <form method="post" action="{{ url_for('interventions.utiliser_piece', intervention_id=iv.id) }}"
+              class="row g-2">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="col-7">
+            <select name="piece_id" class="form-select form-select-sm">
+              {% for p in pieces %}
+              <option value="{{ p.id }}">{{ p.nom }} (stock : {{ p.quantite }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-2"><input type="number" name="quantite" class="form-control form-control-sm"
+                                    value="1" min="1"></div>
+          <div class="col-3"><button class="btn btn-sm btn-outline-success w-100">Prélever</button></div>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <!-- Observations & rapport -->
+    <div class="card card-kpi mb-3">
+      <div class="card-body">
+        <h5><i class="bi bi-journal-text"></i> Observations & rapport technique</h5>
+        <form method="post" action="{{ url_for('interventions.observations', intervention_id=iv.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-2">
+            <label class="form-label small">Observations terrain</label>
+            <textarea name="observations" class="form-control" rows="3">{{ iv.observations or '' }}</textarea>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small">Rapport d'intervention</label>
+            <textarea name="rapport" class="form-control" rows="3"
+                      placeholder="Travaux réalisés, résultats, recommandations…">{{ iv.rapport or '' }}</textarea>
+          </div>
+          <button class="btn btn-sm btn-success"><i class="bi bi-save"></i> Enregistrer</button>
+          <a href="{{ url_for('rapports.intervention_report', intervention_id=iv.id) }}"
+             class="btn btn-sm btn-outline-primary" target="_blank">
+            <i class="bi bi-file-earmark-pdf"></i> Rapport imprimable</a>
+        </form>
+      </div>
+    </div>
+
+    <!-- Communication -->
+    <div class="card card-kpi">
+      <div class="card-body">
+        <h5><i class="bi bi-chat-dots"></i> Communication (terrain ↔ bureau)</h5>
+        <div style="max-height: 260px; overflow-y: auto;" class="border rounded p-2 mb-2 bg-light">
+          {% for m in messages %}
+          <div class="mb-2">
+            <strong>{{ m.auteur.nom }}</strong>
+            <small class="text-muted">{{ m.date.strftime('%d/%m/%Y %H:%M') }}</small>
+            <div class="bg-white border rounded p-2">{{ m.contenu }}</div>
+          </div>
+          {% else %}
+          <p class="text-muted mb-0">Aucun message pour le moment.</p>
+          {% endfor %}
+        </div>
+        <form method="post" action="{{ url_for('interventions.envoyer_message', intervention_id=iv.id) }}"
+              class="d-flex gap-2">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="text" name="contenu" class="form-control form-control-sm"
+                 placeholder="Écrire un message…" required>
+          <button class="btn btn-sm btn-primary"><i class="bi bi-send"></i></button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
