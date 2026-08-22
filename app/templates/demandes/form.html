@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Nouvelle demande{% endblock %}
+{% block page_title %}Nouvelle demande d'intervention{% endblock %}
+{% block content %}
+<div class="card card-kpi" style="max-width: 760px;">
+  <div class="card-body">
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="mb-3">
+        <label class="form-label">Titre *</label>
+        <input type="text" name="titre" class="form-control" required
+               placeholder="Ex. : Panne convoyeur bande CV-12">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Description</label>
+        <textarea name="description" class="form-control" rows="3"
+                  placeholder="Décrivez le problème (mots-clés comme « panne », « urgence », « fuite »… aident l'analyse automatique)"></textarea>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Client / Service demandeur</label>
+          <input type="text" name="client" class="form-control" placeholder="Ex. : Atelier Lavage">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Localisation</label>
+          <input type="text" name="localisation" class="form-control" placeholder="Ex. : Zone Nord">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Type d'intervention</label>
+          <select name="type_intervention" class="form-select">
+            {% for t in types %}<option>{{ t }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Impact métier (1 = faible, 5 = bloquant)</label>
+          <input type="range" name="impact" class="form-range" min="1" max="5" value="3"
+                 oninput="document.getElementById('impactVal').textContent = this.value">
+          <small>Impact : <strong id="impactVal">3</strong>/5</small>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Échéance souhaitée</label>
+          <input type="date" name="date_echeance" class="form-control">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Priorité</label>
+          <select name="priorite" class="form-select">
+            <option value="auto" selected>🤖 Automatique (analyse intelligente)</option>
+            <option>Critique</option><option>Haute</option>
+            <option>Moyenne</option><option>Basse</option>
+          </select>
+        </div>
+      </div>
+      <div class="mt-4">
+        <button class="btn btn-success"><i class="bi bi-check-circle"></i> Créer la demande</button>
+        <a href="{{ url_for('demandes.liste') }}" class="btn btn-outline-secondary">Annuler</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

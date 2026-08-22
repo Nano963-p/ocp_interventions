@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Demande #{{ demande.id }}{% endblock %}
+{% block page_title %}Demande #{{ demande.id }} — {{ demande.titre }}{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card card-kpi h-100">
+      <div class="card-body">
+        <h5>Détails de la demande</h5>
+        <table class="table table-sm">
+          <tr><th>Titre</th><td>{{ demande.titre }}</td></tr>
+          <tr><th>Description</th><td>{{ demande.description or '—' }}</td></tr>
+          <tr><th>Client</th><td>{{ demande.client or '—' }}</td></tr>
+          <tr><th>Localisation</th><td>{{ demande.localisation or '—' }}</td></tr>
+          <tr><th>Type</th><td>{{ demande.type_intervention }}</td></tr>
+          <tr><th>Impact</th><td>{{ demande.impact }}/5</td></tr>
+          <tr><th>Priorité</th><td><span class="badge badge-{{ demande.priorite }}">{{ demande.priorite }}</span></td></tr>
+          <tr><th>Statut</th><td><span class="badge badge-{{ demande.statut.replace(' ', '-') }}">{{ demande.statut }}</span></td></tr>
+          <tr><th>Créée le</th><td>{{ demande.date_creation.strftime('%d/%m/%Y %H:%M') }}</td></tr>
+          <tr><th>Échéance</th><td>
+            {{ demande.date_echeance.strftime('%d/%m/%Y') if demande.date_echeance else '—' }}
+            {% if demande.en_retard %}<span class="badge text-bg-danger">EN RETARD</span>{% endif %}
+          </td></tr>
+        </table>
+
+        {% if analyse %}
+        <div class="alert alert-info">
+          <strong><i class="bi bi-robot"></i> Analyse intelligente :</strong>
+          priorité suggérée <strong>{{ analyse.priorite }}</strong> (score {{ analyse.score }}/100)
+          <ul class="mb-0 mt-1 small">
+            {% for r in analyse.raisons %}<li>{{ r }}</li>{% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
+        {% if demande.intervention %}
+        <a href="{{ url_for('interventions.detail', intervention_id=demande.intervention.id) }}"
+           class="btn btn-primary btn-sm"><i class="bi bi-tools"></i> Voir l'intervention #{{ demande.intervention.id }}</a>
+        {% endif %}
+        {% if current_user.is_planificateur and demande.statut not in ('Terminée','Annulée') %}
+        <form method="post" action="{{ url_for('demandes.annuler', demande_id=demande.id) }}"
+              class="d-inline" onsubmit="return confirm('Annuler cette demande ?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-outline-danger btn-sm"><i class="bi bi-x-circle"></i> Annuler la demande</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if demande.statut == 'Nouvelle' %}
+  <div class="col-lg-7">
+    <div class="card card-kpi h-100">
+      <div class="card-body">
+        <h5><i class="bi bi-robot text-success"></i> Suggestion d'affectation intelligente</h5>
+        <p class="text-muted small">Classement automatique des techniciens : compétences (40),
+          disponibilité (25), charge (25), zone (10).</p>
+        {% if current_user.is_planificateur %}
+        <form method="post" action="{{ url_for('demandes.planifier', demande_id=demande.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="row g-2 mb-3">
+            <div class="col-md-7">
+              <label class="form-label">Technicien à affecter</label>
+              <select name="technicien_id" class="form-select" required>
+                {% for s in suggestions %}
+                <option value="{{ s.technicien.id }}" {{ 'selected' if loop.first }}>
+                  {{ s.technicien.nom }} — score {{ s.score }}/100 ({{ s.technicien.specialite }})
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-5">
+              <label class="form-label">Date planifiée</label>
+              <input type="date" name="date_planifiee" class="form-control" required>
+            </div>
+          </div>
+          <button class="btn btn-success"><i class="bi bi-calendar-check"></i> Planifier l'intervention</button>
+        </form>
+        <hr>
+        {% endif %}
+        {% for s in suggestions %}
+        <div class="border rounded p-2 mb-2">
+          <div class="d-flex justify-content-between align-items-center">
+            <strong>{{ loop.index }}. {{ s.technicien.nom }}</strong>
+            <span class="badge text-bg-{{ 'success' if s.score >= 70 else ('warning' if s.score >= 40 else 'secondary') }}">
+              {{ s.score }}/100</span>
+          </div>
+          <div class="progress score-bar my-1">
+            <div class="progress-bar bg-{{ 'success' if s.score >= 70 else ('warning' if s.score >= 40 else 'secondary') }}"
+                 style="width:{{ s.score }}%"></div>
+          </div>
+          <small class="text-muted">
+            {% for d in s.details %}{{ d }}{% if not loop.last %} · {% endif %}{% endfor %}
+          </small>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

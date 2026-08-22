@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Demandes{% endblock %}
+{% block page_title %}Demandes d'intervention{% endblock %}
+{% block content %}
+<div class="card card-kpi">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <form class="d-flex gap-2" method="get">
+        <select name="statut" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="">Tous les statuts</option>
+          {% for s in ['Nouvelle','Planifiée','En cours','Terminée','Annulée'] %}
+          <option value="{{ s }}" {{ 'selected' if s == statut }}>{{ s }}</option>
+          {% endfor %}
+        </select>
+        <select name="priorite" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="">Toutes les priorités</option>
+          {% for p in ['Critique','Haute','Moyenne','Basse'] %}
+          <option value="{{ p }}" {{ 'selected' if p == priorite }}>{{ p }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      <a href="{{ url_for('demandes.nouvelle') }}" class="btn btn-success btn-sm">
+        <i class="bi bi-plus-circle"></i> Nouvelle demande</a>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead><tr>
+          <th>#</th><th>Titre</th><th>Client</th><th>Type</th><th>Priorité</th>
+          <th>Statut</th><th>Échéance</th><th></th>
+        </tr></thead>
+        <tbody>
+        {% for d in demandes %}
+          <tr class="{{ 'table-danger' if d.en_retard }}">
+            <td>{{ d.id }}</td>
+            <td>{{ d.titre }}
+              {% if d.en_retard %}<span class="badge text-bg-danger">EN RETARD</span>{% endif %}</td>
+            <td>{{ d.client }}</td>
+            <td>{{ d.type_intervention }}</td>
+            <td><span class="badge badge-{{ d.priorite }}">{{ d.priorite }}</span></td>
+            <td><span class="badge badge-{{ d.statut.replace(' ', '-') }}">{{ d.statut }}</span></td>
+            <td>{{ d.date_echeance.strftime('%d/%m/%Y') if d.date_echeance else '—' }}</td>
+            <td><a href="{{ url_for('demandes.detail', demande_id=d.id) }}"
+                   class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="8" class="text-center text-muted">Aucune demande.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
