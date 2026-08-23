@@ -66,8 +66,9 @@ def changer_statut(intervention_id):
         return redirect(url_for('interventions.detail', intervention_id=iv.id))
 
     iv.statut = nouveau
-    if nouveau == 'En cours' and not iv.date_debut:
-        iv.date_debut = datetime.utcnow()
+    if nouveau == 'En cours':
+        if not iv.date_debut:
+            iv.date_debut = datetime.utcnow()
         iv.demande.statut = 'En cours'
         if iv.technicien:
             iv.technicien.statut = 'occupe'
