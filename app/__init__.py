@@ -31,23 +31,35 @@ def create_app():
 
     from . import models 
 
-    # from .routes.auth import bp as auth_bp
-    # from .routes.main import bp as main_bp
-    # from .routes.demandes import bp as demandes_bp
-    # from .routes.interventions import bp as interventions_bp
-    # from .routes.techniciens import bp as techniciens_bp
-    # from .routes.stock import bp as stock_bp
-    # from .routes.rapports import bp as rapports_bp
+    from .routes.auth import bp as auth_bp
+    from .routes.main import bp as main_bp
+    from .routes.demandes import bp as demandes_bp
+    from .routes.interventions import bp as interventions_bp
+    from .routes.techniciens import bp as techniciens_bp
+    from .routes.stock import bp as stock_bp
+    from .routes.rapports import bp as rapports_bp
 
-    # app.register_blueprint(auth_bp)
-    # app.register_blueprint(main_bp)
-    # app.register_blueprint(demandes_bp)
-    # app.register_blueprint(interventions_bp)
-    # app.register_blueprint(techniciens_bp)
-    # app.register_blueprint(stock_bp)
-    # app.register_blueprint(rapports_bp)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(main_bp)
+    app.register_blueprint(demandes_bp)
+    app.register_blueprint(interventions_bp)
+    app.register_blueprint(techniciens_bp)
+    app.register_blueprint(stock_bp)
+    app.register_blueprint(rapports_bp)
+
+    @app.errorhandler(403)
+    def forbidden(e):
+        from flask import render_template
+        return render_template('errors/403.html'), 403
+
+    @app.errorhandler(404)
+    def not_found(e):
+        from flask import render_template
+        return render_template('errors/404.html'), 404
+
 
     with app.app_context():
+        pass
         from .seed import seed_if_empty
         seed_if_empty()
 

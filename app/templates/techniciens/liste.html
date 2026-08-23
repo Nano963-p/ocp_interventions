@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Techniciens{% endblock %}
+{% block page_title %}Techniciens{% endblock %}
+{% block content %}
+<div class="card card-kpi">
+  <div class="card-body">
+    <div class="d-flex justify-content-end mb-3">
+      <a href="{{ url_for('techniciens.nouveau') }}" class="btn btn-success btn-sm">
+        <i class="bi bi-plus-circle"></i> Nouveau technicien</a>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead><tr>
+          <th>Nom</th><th>Spécialités</th><th>Zone</th><th>Téléphone</th>
+          <th>Disponibilité</th><th>Charge active</th><th></th>
+        </tr></thead>
+        <tbody>
+        {% for t in techniciens %}
+          {% set charge = t.charge_active() %}
+          <tr>
+            <td><strong>{{ t.nom }}</strong></td>
+            <td>{{ t.specialite }}</td>
+            <td>{{ t.zone }}</td>
+            <td>{{ t.telephone }}</td>
+            <td><span class="badge text-bg-{{ 'success' if t.statut == 'disponible' else ('warning' if t.statut == 'occupe' else 'danger') }}">
+              {{ t.statut.capitalize() }}</span></td>
+            <td>
+              <span class="badge text-bg-{{ 'danger' if charge >= 4 else ('warning' if charge >= 2 else 'light') }}">
+                {{ charge }} intervention(s)</span>
+              {% if charge >= 4 %}<i class="bi bi-exclamation-triangle text-danger" title="Surcharge"></i>{% endif %}
+            </td>
+            <td class="text-end">
+              <a href="{{ url_for('techniciens.modifier', technicien_id=t.id) }}"
+                 class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+              {% if current_user.is_admin %}
+              <form method="post" class="d-inline"
+                    action="{{ url_for('techniciens.supprimer', technicien_id=t.id) }}"
+                    onsubmit="return confirm('Supprimer ce technicien ?')">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7" class="text-center text-muted">Aucun technicien.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Modifier' if t else 'Nouveau' }} technicien{% endblock %}
+{% block page_title %}{{ 'Modifier le' if t else 'Nouveau' }} technicien{% endblock %}
+{% block content %}
+<div class="card card-kpi" style="max-width: 640px;">
+  <div class="card-body">
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="mb-3">
+        <label class="form-label">Nom complet *</label>
+        <input type="text" name="nom" class="form-control" value="{{ t.nom if t else '' }}" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Spécialités (séparées par des virgules)</label>
+        <input type="text" name="specialite" class="form-control"
+               value="{{ t.specialite if t else '' }}" placeholder="Ex. : Mécanique, Hydraulique">
+        <small class="text-muted">Types reconnus : {{ types | join(', ') }}</small>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Zone d'affectation</label>
+          <input type="text" name="zone" class="form-control"
+                 value="{{ t.zone if t else 'Site Khouribga' }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Téléphone</label>
+          <input type="text" name="telephone" class="form-control" value="{{ t.telephone if t else '' }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Disponibilité</label>
+          <select name="statut" class="form-select">
+            {% for s in ['disponible','occupe','absent'] %}
+            <option value="{{ s }}" {{ 'selected' if t and t.statut == s }}>{{ s.capitalize() }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="mt-4">
+        <button class="btn btn-success"><i class="bi bi-check-circle"></i> Enregistrer</button>
+        <a href="{{ url_for('techniciens.liste') }}" class="btn btn-outline-secondary">Annuler</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
