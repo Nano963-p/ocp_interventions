@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Rapports{% endblock %}
+{% block page_title %}Rapport global des interventions{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-md-3"><div class="card card-kpi"><div class="card-body text-center">
+    <div class="value text-success">{{ interventions | length }}</div>
+    <small class="text-muted">Interventions terminées</small></div></div></div>
+  <div class="col-md-3"><div class="card card-kpi"><div class="card-body text-center">
+    <div class="value text-primary">{{ kpis.taux_resolution }}%</div>
+    <small class="text-muted">Taux de résolution</small></div></div></div>
+  <div class="col-md-3"><div class="card card-kpi"><div class="card-body text-center">
+    <div class="value text-info">{{ kpis.duree_moyenne }} h</div>
+    <small class="text-muted">Durée moyenne</small></div></div></div>
+  <div class="col-md-3"><div class="card card-kpi"><div class="card-body text-center">
+    <div class="value text-warning">{{ '%.2f' | format(cout_total) }}</div>
+    <small class="text-muted">Coût total pièces (MAD)</small></div></div></div>
+</div>
+
+<div class="card card-kpi">
+  <div class="card-body">
+    <h5><i class="bi bi-file-earmark-bar-graph"></i> Interventions terminées
+      <button class="btn btn-sm btn-outline-secondary float-end" onclick="window.print()">
+        <i class="bi bi-printer"></i> Imprimer</button></h5>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead><tr>
+          <th>#</th><th>Demande</th><th>Technicien</th><th>Clôturée le</th>
+          <th>Durée</th><th>Pièces</th><th>Coût pièces</th><th></th>
+        </tr></thead>
+        <tbody>
+        {% for iv in interventions %}
+          <tr>
+            <td>{{ iv.id }}</td>
+            <td>{{ iv.demande.titre }}</td>
+            <td>{{ iv.technicien.nom }}</td>
+            <td>{{ iv.date_fin.strftime('%d/%m/%Y') if iv.date_fin else '—' }}</td>
+            <td>{{ iv.duree_heures() ~ ' h' if iv.duree_heures() else '—' }}</td>
+            <td>{{ iv.pieces_utilisees | length }}</td>
+            <td>{{ '%.2f' | format(iv.cout_pieces()) }} MAD</td>
+            <td><a href="{{ url_for('rapports.intervention_report', intervention_id=iv.id) }}"
+                   class="btn btn-sm btn-outline-primary" target="_blank">
+                 <i class="bi bi-file-text"></i> Rapport</a></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="8" class="text-center text-muted">Aucune intervention terminée.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
