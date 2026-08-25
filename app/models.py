@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """Modèles de données – Gestion des Interventions."""
+import uuid
+
 from datetime import date, datetime
 
 from flask_login import UserMixin
@@ -79,6 +81,8 @@ class Demande(db.Model):
     statut = db.Column(db.String(20), nullable=False, default='Nouvelle')
     date_creation = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     date_echeance = db.Column(db.Date, nullable=True)
+    token_suivi = db.Column(db.String(36), unique=True, nullable=False,
+                        default=lambda: str(uuid.uuid4()))
 
     intervention = db.relationship('Intervention', backref='demande', uselist=False)
 

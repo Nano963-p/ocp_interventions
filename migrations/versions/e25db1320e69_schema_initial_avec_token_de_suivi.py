@@ -1,8 +1,8 @@
-"""schema initial
+"""schema initial avec token de suivi
 
-Revision ID: 3bf8468fb789
+Revision ID: e25db1320e69
 Revises: 
-Create Date: 2026-08-22 19:37:42.622830
+Create Date: 2026-08-26 00:08:54.945252
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '3bf8468fb789'
+revision = 'e25db1320e69'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -30,7 +30,9 @@ def upgrade():
     sa.Column('statut', sa.String(length=20), nullable=False),
     sa.Column('date_creation', sa.DateTime(), nullable=False),
     sa.Column('date_echeance', sa.Date(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
+    sa.Column('token_suivi', sa.String(length=36), nullable=False),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('token_suivi')
     )
     op.create_table('piece',
     sa.Column('id', sa.Integer(), nullable=False),
