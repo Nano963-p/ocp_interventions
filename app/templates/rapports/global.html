@@ -35,7 +35,7 @@
             <td>{{ iv.demande.titre }}</td>
             <td>{{ iv.technicien.nom }}</td>
             <td>{{ iv.date_fin.strftime('%d/%m/%Y') if iv.date_fin else '—' }}</td>
-            <td>{{ iv.duree_heures() ~ ' h' if iv.duree_heures() else '—' }}</td>
+            <td>{{ (iv.duree_heures() ~ ' h') if iv.duree_heures() is not none else '—' }}</td>
             <td>{{ iv.pieces_utilisees | length }}</td>
             <td>{{ '%.2f' | format(iv.cout_pieces()) }} MAD</td>
             <td><a href="{{ url_for('rapports.intervention_report', intervention_id=iv.id) }}"

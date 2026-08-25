@@ -18,7 +18,7 @@
           <tr><th>Date planifiée</th><td>{{ iv.date_planifiee.strftime('%d/%m/%Y') }}</td></tr>
           <tr><th>Début</th><td>{{ iv.date_debut.strftime('%d/%m/%Y %H:%M') if iv.date_debut else '—' }}</td></tr>
           <tr><th>Fin</th><td>{{ iv.date_fin.strftime('%d/%m/%Y %H:%M') if iv.date_fin else '—' }}</td></tr>
-          <tr><th>Durée</th><td>{{ iv.duree_heures() ~ ' h' if iv.duree_heures() else '—' }}</td></tr>
+          <tr><th>Durée</th><td>{{ (iv.duree_heures() ~ ' h') if iv.duree_heures() is not none else '—' }}</td></tr>
           <tr><th>Statut</th><td><span class="badge badge-{{ iv.statut.replace(' ', '-') }} fs-6">{{ iv.statut }}</span></td></tr>
         </table>
         <form method="post" action="{{ url_for('interventions.changer_statut', intervention_id=iv.id) }}"
