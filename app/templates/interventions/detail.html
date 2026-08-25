@@ -31,6 +31,22 @@
           </select>
           <button class="btn btn-sm btn-primary"><i class="bi bi-arrow-repeat"></i> Mettre à jour</button>
         </form>
+                {% if current_user.is_planificateur and iv.statut not in ('Terminée', 'Annulée') %}
+        <hr>
+        <form method="post" action="{{ url_for('interventions.reaffecter', intervention_id=iv.id) }}"
+              class="d-flex gap-2">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <select name="technicien_id" class="form-select form-select-sm">
+            {% for t in techniciens %}
+            <option value="{{ t.id }}" {{ 'selected' if t.id == iv.technicien_id }}>
+              {{ t.nom }} — {{ t.statut }} ({{ t.charge_active() }} interv.)
+            </option>
+            {% endfor %}
+          </select>
+          <button class="btn btn-sm btn-outline-warning">
+            <i class="bi bi-arrow-left-right"></i> Réaffecter</button>
+        </form>
+        {% endif %}
       </div>
     </div>
 

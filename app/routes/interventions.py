@@ -7,8 +7,10 @@ from flask import (Blueprint, abort, flash, redirect, render_template,
 from flask_login import current_user, login_required
 
 from .. import db
-from ..models import (Intervention, Message, Piece, STATUTS_INTERVENTION,
+from ..models import (Intervention, Message, Piece,Technicien, STATUTS_INTERVENTION,
                       UtilisationPiece)
+
+from .auth import role_required
 
 bp = Blueprint('interventions', __name__, url_prefix='/interventions')
 
@@ -49,10 +51,12 @@ def detail(intervention_id):
             and current_user.technicien_id != iv.technicien_id):
         abort(403)
     pieces = Piece.query.order_by(Piece.nom).all()
+    techniciens = Technicien.query.order_by(Technicien.nom).all()
     messages = (Message.query.filter_by(intervention_id=iv.id)
                 .order_by(Message.date.asc()).all())
     return render_template('interventions/detail.html', iv=iv, pieces=pieces,
-                           messages=messages, statuts=STATUTS_INTERVENTION)
+                           techniciens=techniciens, messages=messages,
+                           statuts=STATUTS_INTERVENTION)
 
 
 @bp.route('/<int:intervention_id>/statut', methods=['POST'])
@@ -85,6 +89,36 @@ def changer_statut(intervention_id):
     db.session.commit()
     flash(f"Intervention #{iv.id} passée au statut « {nouveau} ».", 'success')
     return redirect(url_for('interventions.detail', intervention_id=iv.id))
+
+
+@bp.route('/<int:intervention_id>/reaffecter', methods=['POST'])
+@role_required('admin', 'planificateur')
+def reaffecter(intervention_id):
+    iv = Intervention.query.get_or_404(intervention_id)
+    if iv.statut in ('Terminée', 'Annulée'):
+        flash("Impossible de réaffecter une intervention terminée ou annulée.", 'danger')
+        return redirect(url_for('interventions.detail', intervention_id=iv.id))
+
+    nouveau_technicien = Technicien.query.get_or_404(int(request.form['technicien_id']))
+    if nouveau_technicien.id == iv.technicien_id:
+        flash("Cette intervention est déjà affectée à ce technicien.", 'warning')
+        return redirect(url_for('interventions.detail', intervention_id=iv.id))
+
+    ancien_technicien = iv.technicien
+    iv.technicien_id = nouveau_technicien.id
+    db.session.commit()
+
+    # Libère l'ancien technicien s'il n'a plus de charge active,
+    # marque le nouveau comme occupé si l'intervention est déjà en cours.
+    _liberer_technicien(ancien_technicien)
+    if iv.statut == 'En cours':
+        nouveau_technicien.statut = 'occupe'
+    db.session.commit()
+
+    flash(f"Intervention #{iv.id} réaffectée de "
+          f"{ancien_technicien.nom if ancien_technicien else '—'} à {nouveau_technicien.nom}.", 'success')
+    return redirect(url_for('interventions.detail', intervention_id=iv.id))
+
 
 
 @bp.route('/<int:intervention_id>/observations', methods=['POST'])
