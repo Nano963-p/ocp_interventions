@@ -63,7 +63,7 @@ def nouvelle():
         db.session.commit()
         if analyse:
             flash(f"Priorité calculée automatiquement : « {analyse[0]} » "
-                  f"(score IA {analyse[1]}/100).", 'info')
+                  f"(score {analyse[1]}/100).", 'info')
         flash(f"Demande #{d.id} créée avec succès.", 'success')
         return redirect(url_for('demandes.detail', demande_id=d.id))
 
