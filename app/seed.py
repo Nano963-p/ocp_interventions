@@ -14,7 +14,7 @@ def seed_if_empty():
     today = date.today()
 
     # ---------- Techniciens ----------
-    t1 = Technicien(nom='Ahmed Bennis', specialite='Mécanique, Hydraulique',
+    t1 = Technicien(nom='Ahmed Hakim', specialite='Mécanique, Hydraulique',
                     zone='Zone Nord', telephone='0601-111111', statut='disponible')
     t2 = Technicien(nom='Youssef Idrissi', specialite='Électrique, Instrumentation',
                     zone='Zone Sud', telephone='0602-222222', statut='disponible')
@@ -22,7 +22,7 @@ def seed_if_empty():
                     zone='Site Khouribga', telephone='0603-333333', statut='disponible')
     t4 = Technicien(nom='Said Tazi', specialite='Mécanique',
                     zone='Zone Nord', telephone='0604-444444', statut='occupe')
-    t5 = Technicien(nom='Fatima Zahra El Amrani', specialite='Hydraulique, Instrumentation',
+    t5 = Technicien(nom='Fatima Zahra Amar', specialite='Hydraulique, Instrumentation',
                     zone='Zone Sud', telephone='0605-555555', statut='disponible')
     db.session.add_all([t1, t2, t3, t4, t5])
     db.session.flush()
@@ -32,7 +32,7 @@ def seed_if_empty():
     admin.set_password('admin123')
     planif = User(username='planif', nom='Planificateur OCP', role='planificateur')
     planif.set_password('planif123')
-    tech = User(username='ahmed', nom='Ahmed Bennis', role='technicien', technicien_id=t1.id)
+    tech = User(username='ahmed', nom='Ahmed Hakim', role='technicien', technicien_id=t1.id)
     tech.set_password('tech123')
     db.session.add_all([admin, planif, tech])
 

@@ -38,6 +38,7 @@ def create_app():
     from .routes.techniciens import bp as techniciens_bp
     from .routes.stock import bp as stock_bp
     from .routes.rapports import bp as rapports_bp
+    from .routes.suivi import bp as suivi_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
@@ -46,6 +47,7 @@ def create_app():
     app.register_blueprint(techniciens_bp)
     app.register_blueprint(stock_bp)
     app.register_blueprint(rapports_bp)
+    app.register_blueprint(suivi_bp)
 
     @app.errorhandler(403)
     def forbidden(e):

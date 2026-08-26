@@ -1,8 +1,8 @@
 """schema initial avec token de suivi
 
-Revision ID: e25db1320e69
+Revision ID: 77cfbe6e0421
 Revises: 
-Create Date: 2026-08-26 00:08:54.945252
+Create Date: 2026-08-26 11:16:04.364044
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'e25db1320e69'
+revision = '77cfbe6e0421'
 down_revision = None
 branch_labels = None
 depends_on = None

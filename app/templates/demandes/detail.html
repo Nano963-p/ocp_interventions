@@ -22,6 +22,18 @@
             {% if demande.en_retard %}<span class="badge text-bg-danger">EN RETARD</span>{% endif %}
           </td></tr>
         </table>
+        {% if current_user.is_planificateur %}
+        <div class="alert alert-light border mt-2 mb-2">
+          <small class="text-muted d-block mb-1"><i class="bi bi-link-45deg"></i> Lien de suivi client :</small>
+          <div class="input-group input-group-sm">
+            <input type="text" class="form-control" readonly id="lienSuivi"
+                   value="{{ request.url_root.rstrip('/') }}{{ url_for('suivi.public', token=demande.token_suivi) }}">
+            <button class="btn btn-outline-secondary" type="button"
+                    onclick="navigator.clipboard.writeText(document.getElementById('lienSuivi').value); this.innerHTML='<i class=\'bi bi-check\'></i> Copié'">
+              <i class="bi bi-clipboard"></i> Copier</button>
+          </div>
+        </div>
+        {% endif %}
 
         {% if analyse %}
         <div class="alert alert-info">
