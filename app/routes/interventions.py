@@ -138,6 +138,12 @@ def observations(intervention_id):
 def utiliser_piece(intervention_id):
     iv = Intervention.query.get_or_404(intervention_id)
     _verifier_acces(iv)
+
+    if iv.statut not in ('En cours', 'Terminée'):
+        flash("Le prélèvement de pièces n'est possible que sur une intervention "
+              "en cours ou terminée.", 'warning')
+        return redirect(url_for('interventions.detail', intervention_id=iv.id))
+
     piece = Piece.query.get_or_404(int(request.form['piece_id']))
     quantite = max(1, int(request.form.get('quantite', 1)))
 
@@ -151,6 +157,32 @@ def utiliser_piece(intervention_id):
                                     quantite=quantite))
     db.session.commit()
     flash(f"{quantite} × « {piece.nom} » prélevée(s) du stock.", 'success')
+    return redirect(url_for('interventions.detail', intervention_id=iv.id))
+
+
+@bp.route('/<int:intervention_id>/piece/<int:utilisation_id>/annuler', methods=['POST'])
+@login_required
+def annuler_piece(intervention_id, utilisation_id):
+    iv = Intervention.query.get_or_404(intervention_id)
+    _verifier_acces(iv)
+
+    if iv.statut == 'Terminée':
+        flash("Impossible de retirer une pièce d'une intervention déjà terminée. "
+              "Ajustez le stock manuellement si nécessaire.", 'danger')
+        return redirect(url_for('interventions.detail', intervention_id=iv.id))
+
+    utilisation = UtilisationPiece.query.get_or_404(utilisation_id)
+    if utilisation.intervention_id != iv.id:
+        abort(404)
+
+    # Restitue la quantité au stock et supprime la trace
+    utilisation.piece.quantite += utilisation.quantite
+    nom_piece = utilisation.piece.nom
+    qte = utilisation.quantite
+    db.session.delete(utilisation)
+    db.session.commit()
+
+    flash(f"Prélèvement annulé : {qte} × « {nom_piece} » remise(s) en stock.", 'success')
     return redirect(url_for('interventions.detail', intervention_id=iv.id))
 
 

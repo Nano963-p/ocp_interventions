@@ -55,17 +55,31 @@
       <div class="card-body">
         <h5><i class="bi bi-box-seam"></i> Pièces détachées utilisées</h5>
         <table class="table table-sm">
-          <thead><tr><th>Pièce</th><th>Qté</th><th>Coût</th></tr></thead>
+          <thead><tr><th>Pièce</th><th>Qté</th><th>Coût</th><th></th></tr></thead>
           <tbody>
             {% for u in iv.pieces_utilisees %}
-            <tr><td>{{ u.piece.nom }}</td><td>{{ u.quantite }}</td>
-                <td>{{ '%.2f' | format(u.quantite * u.piece.prix_unitaire) }} MAD</td></tr>
+            <tr>
+              <td>{{ u.piece.nom }}</td>
+              <td>{{ u.quantite }}</td>
+              <td>{{ '%.2f' | format(u.quantite * u.piece.prix_unitaire) }} MAD</td>
+              <td>
+                {% if iv.statut != 'Terminée' and (current_user.is_planificateur or (current_user.role == 'technicien' and current_user.technicien_id == iv.technicien_id)) %}
+                <form method="post"
+                      action="{{ url_for('interventions.annuler_piece', intervention_id=iv.id, utilisation_id=u.id) }}"
+                      onsubmit="return confirm('Annuler ce prélèvement et remettre la pièce en stock ?')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-sm btn-outline-danger" title="Annuler ce prélèvement">
+                    <i class="bi bi-x-lg"></i></button>
+                </form>
+                {% endif %}
+              </td>
+            </tr>
             {% else %}
-            <tr><td colspan="3" class="text-muted">Aucune pièce utilisée.</td></tr>
+            <tr><td colspan="4" class="text-muted">Aucune pièce utilisée.</td></tr>
             {% endfor %}
           </tbody>
           {% if iv.pieces_utilisees %}
-          <tfoot><tr><th colspan="2">Total</th><th>{{ '%.2f' | format(iv.cout_pieces()) }} MAD</th></tr></tfoot>
+          <tfoot><tr><th colspan="2">Total</th><th>{{ '%.2f' | format(iv.cout_pieces()) }} MAD</th><th></th></tr></tfoot>
           {% endif %}
         </table>
         {% if pieces and (current_user.is_planificateur or (current_user.role == 'technicien' and current_user.technicien_id == iv.technicien_id)) %}
