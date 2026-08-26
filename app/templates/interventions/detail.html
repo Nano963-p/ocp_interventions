@@ -122,6 +122,9 @@
           <a href="{{ url_for('rapports.intervention_report', intervention_id=iv.id) }}"
              class="btn btn-sm btn-outline-primary" target="_blank">
             <i class="bi bi-file-earmark-pdf"></i> Rapport imprimable</a>
+          <a href="{{ url_for('rapports.intervention_report_pdf', intervention_id=iv.id) }}"
+             class="btn btn-sm btn-outline-danger" target="_blank">
+            <i class="bi bi-file-earmark-pdf"></i> Télécharger PDF</a>
         </form>
       </div>
     </div>

@@ -1,8 +1,8 @@
-"""schema initial avec token de suivi
+"""schema final
 
-Revision ID: 77cfbe6e0421
+Revision ID: 34ef4c51645d
 Revises: 
-Create Date: 2026-08-26 11:16:04.364044
+Create Date: 2026-08-26 21:00:10.199655
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '77cfbe6e0421'
+revision = '34ef4c51645d'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -51,6 +51,9 @@ def upgrade():
     sa.Column('zone', sa.String(length=120), nullable=False),
     sa.Column('telephone', sa.String(length=30), nullable=False),
     sa.Column('statut', sa.String(length=20), nullable=False),
+    sa.Column('latitude', sa.Float(), nullable=True),
+    sa.Column('longitude', sa.Float(), nullable=True),
+    sa.Column('derniere_position', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('intervention',

@@ -20,8 +20,10 @@
 <div class="card card-kpi">
   <div class="card-body">
     <h5><i class="bi bi-file-earmark-bar-graph"></i> Interventions terminées
+      <a href="{{ url_for('rapports.global_report_pdf') }}" class="btn btn-sm btn-outline-danger float-end ms-2"
+         target="_blank"><i class="bi bi-file-earmark-pdf"></i> Télécharger PDF</a>
       <button class="btn btn-sm btn-outline-secondary float-end" onclick="window.print()">
-        <i class="bi bi-printer"></i> Imprimer</button></h5>
+      <i class="bi bi-printer"></i> Imprimer</button></h5>
     <div class="table-responsive">
       <table class="table table-hover align-middle">
         <thead><tr>

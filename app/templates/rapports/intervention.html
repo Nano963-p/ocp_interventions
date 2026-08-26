@@ -20,6 +20,10 @@
     </div>
     <button class="btn btn-success no-print" onclick="window.print()">
       Imprimer / PDF</button>
+    <a href="{{ url_for('rapports.intervention_report_pdf', intervention_id=iv.id) }}"
+       class="btn btn-outline-success no-print" target="_blank">
+      <i class="bi bi-file-earmark-pdf"></i> Télécharger PDF</a>
+    
   </div>
 
   <h5>Rapport d'intervention n° {{ iv.id }}</h5>

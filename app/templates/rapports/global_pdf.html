@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @page { size: A4 landscape; margin: 1.5cm; }
+  body { font-family: Helvetica, Arial, sans-serif; font-size: 10px; color: #222; }
+  h1 { font-size: 16px; color: #00843d; margin-bottom: 0; }
+  .sub { color: #666; font-size: 10px; margin-bottom: 16px; }
+  .kpis { width: 100%; margin-bottom: 16px; }
+  .kpis td { text-align: center; border: 1px solid #ccc; padding: 8px; }
+  .kpis .val { font-size: 16px; font-weight: bold; color: #00843d; }
+  table.data { width: 100%; border-collapse: collapse; }
+  table.data th, table.data td { border: 1px solid #ccc; padding: 5px 6px; text-align: left; }
+  table.data th { background: #f0f2f0; }
+</style>
+</head>
+<body>
+  <h1>Groupe OCP — Site de Khouribga</h1>
+  <div class="sub">Rapport global des interventions — généré le {{ date_generation }}</div>
+
+  <table class="kpis">
+    <tr>
+      <td><div class="val">{{ interventions | length }}</div>Interventions terminées</td>
+      <td><div class="val">{{ kpis.taux_resolution }}%</div>Taux de résolution</td>
+      <td><div class="val">{{ kpis.duree_moyenne }} h</div>Durée moyenne</td>
+      <td><div class="val">{{ '%.2f' | format(cout_total) }} MAD</div>Coût total pièces</td>
+    </tr>
+  </table>
+
+  <table class="data">
+    <thead><tr>
+      <th>#</th><th>Demande</th><th>Technicien</th><th>Clôturée le</th>
+      <th>Durée</th><th>Pièces</th><th>Coût pièces</th>
+    </tr></thead>
+    <tbody>
+    {% for iv in interventions %}
+      <tr>
+        <td>{{ iv.id }}</td>
+        <td>{{ iv.demande.titre }}</td>
+        <td>{{ iv.technicien.nom }}</td>
+        <td>{{ iv.date_fin.strftime('%d/%m/%Y') if iv.date_fin else '-' }}</td>
+        <td>{{ (iv.duree_heures() ~ ' h') if iv.duree_heures() else '-' }}</td>
+        <td>{{ iv.pieces_utilisees | length }}</td>
+        <td>{{ '%.2f' | format(iv.cout_pieces()) }} MAD</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="7">Aucune intervention terminée.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

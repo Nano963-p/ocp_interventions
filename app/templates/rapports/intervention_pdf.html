@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @page { size: A4; margin: 2cm; }
+  body { font-family: Helvetica, Arial, sans-serif; font-size: 11px; color: #222; }
+  h1 { font-size: 16px; color: #00843d; margin-bottom: 0; }
+  .sub { color: #666; font-size: 10px; margin-bottom: 20px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+  th, td { border: 1px solid #ccc; padding: 5px 8px; text-align: left; font-size: 10px; }
+  th { background: #f0f2f0; width: 30%; }
+  .section-title { font-size: 12px; font-weight: bold; margin-top: 18px; margin-bottom: 6px; color: #00843d; }
+  .box { border: 1px solid #ccc; padding: 8px; min-height: 30px; }
+  .signatures { margin-top: 50px; width: 100%; }
+  .signatures td { border: none; text-align: center; padding-top: 40px; border-top: 1px solid #000; font-size: 10px; }
+  .signatures-row td { border: none; }
+</style>
+</head>
+<body>
+  <h1>Groupe OCP — Site de Khouribga</h1>
+  <div class="sub">Service Informatique · Rapport d'intervention n° {{ iv.id }}</div>
+
+  <table>
+    <tr><th>Demande</th><td>#{{ iv.demande.id }} — {{ iv.demande.titre }}</td></tr>
+    <tr><th>Description</th><td>{{ iv.demande.description or '-' }}</td></tr>
+    <tr><th>Client / Service</th><td>{{ iv.demande.client or '-' }}</td></tr>
+    <tr><th>Localisation</th><td>{{ iv.demande.localisation or '-' }}</td></tr>
+    <tr><th>Type</th><td>{{ iv.demande.type_intervention }}</td></tr>
+    <tr><th>Priorité</th><td>{{ iv.demande.priorite }}</td></tr>
+    <tr><th>Technicien</th><td>{{ iv.technicien.nom }} ({{ iv.technicien.specialite }})</td></tr>
+    <tr><th>Date planifiée</th><td>{{ iv.date_planifiee.strftime('%d/%m/%Y') }}</td></tr>
+    <tr><th>Début</th><td>{{ iv.date_debut.strftime('%d/%m/%Y %H:%M') if iv.date_debut else '-' }}</td></tr>
+    <tr><th>Fin</th><td>{{ iv.date_fin.strftime('%d/%m/%Y %H:%M') if iv.date_fin else '-' }}</td></tr>
+    <tr><th>Durée</th><td>{{ (iv.duree_heures() ~ ' heures') if iv.duree_heures() else '-' }}</td></tr>
+    <tr><th>Statut</th><td>{{ iv.statut }}</td></tr>
+  </table>
+
+  <div class="section-title">Pièces détachées utilisées</div>
+  <table>
+    <thead><tr><th style="width:20%">Référence</th><th>Pièce</th><th style="width:12%">Quantité</th><th style="width:18%">Coût</th></tr></thead>
+    <tbody>
+      {% for u in iv.pieces_utilisees %}
+      <tr>
+        <td>{{ u.piece.reference }}</td>
+        <td>{{ u.piece.nom }}</td>
+        <td>{{ u.quantite }}</td>
+        <td>{{ '%.2f' | format(u.quantite * u.piece.prix_unitaire) }} MAD</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4">Aucune pièce utilisée.</td></tr>
+      {% endfor %}
+      {% if iv.pieces_utilisees %}
+      <tr><th colspan="3" style="text-align:right">Total</th><th>{{ '%.2f' | format(iv.cout_pieces()) }} MAD</th></tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  <div class="section-title">Observations du technicien</div>
+  <div class="box">{{ iv.observations or '-' }}</div>
+
+  <div class="section-title">Rapport technique</div>
+  <div class="box">{{ iv.rapport or '-' }}</div>
+
+  <table class="signatures">
+    <tr class="signatures-row">
+      <td style="width:50%">Signature du technicien</td>
+      <td style="width:50%">Visa du responsable</td>
+    </tr>
+  </table>
+</body>
+</html>
