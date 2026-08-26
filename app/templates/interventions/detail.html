@@ -68,19 +68,19 @@
           <tfoot><tr><th colspan="2">Total</th><th>{{ '%.2f' | format(iv.cout_pieces()) }} MAD</th></tr></tfoot>
           {% endif %}
         </table>
-        {% if current_user.is_planificateur and pieces %}
+        {% if pieces and (current_user.is_planificateur or (current_user.role == 'technicien' and current_user.technicien_id == iv.technicien_id)) %}
         <form method="post" action="{{ url_for('interventions.utiliser_piece', intervention_id=iv.id) }}"
-              class="row g-2">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          class="row g-2">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="col-7">
-            <select name="piece_id" class="form-select form-select-sm">
-              {% for p in pieces %}
-              <option value="{{ p.id }}">{{ p.nom }} (stock : {{ p.quantite }})</option>
-              {% endfor %}
-            </select>
+          <select name="piece_id" class="form-select form-select-sm">
+          {% for p in pieces %}
+          <option value="{{ p.id }}">{{ p.nom }} (stock : {{ p.quantite }})</option>
+          {% endfor %}
+          </select>
           </div>
           <div class="col-2"><input type="number" name="quantite" class="form-control form-control-sm"
-                                    value="1" min="1"></div>
+                            value="1" min="1"></div>
           <div class="col-3"><button class="btn btn-sm btn-outline-success w-100">Prélever</button></div>
         </form>
         {% endif %}
