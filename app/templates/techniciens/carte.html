@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Carte des techniciens{% endblock %}
+{% block page_title %}Localisation des techniciens{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>#carte { height: 520px; border-radius: .6rem; }</style>
+{% endblock %}
+{% block content %}
+<div class="card card-kpi">
+  <div class="card-body">
+    {% if techniciens %}
+    <div id="carte"></div>
+    {% else %}
+    <p class="text-muted mb-0">
+      <i class="bi bi-geo"></i> Aucun technicien n'a encore partagé sa position.
+      Les techniciens peuvent la partager depuis leur tableau de bord.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+{% if techniciens %}
+const map = L.map('carte').setView([32.86, -6.90], 11);  // centré sur Khouribga
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+const points = [
+  {% for t in techniciens %}
+  { lat: {{ t.latitude }}, lng: {{ t.longitude }}, nom: {{ t.nom | tojson }},
+    statut: {{ t.statut | tojson }},
+    maj: {{ (t.derniere_position.strftime('%d/%m/%Y %H:%M') if t.derniere_position else '') | tojson }} },
+  {% endfor %}
+];
+
+points.forEach(p => {
+  const couleur = p.statut === 'disponible' ? 'green' : (p.statut === 'occupe' ? 'orange' : 'gray');
+  L.circleMarker([p.lat, p.lng], { radius: 9, color: couleur, fillColor: couleur, fillOpacity: .8 })
+    .addTo(map)
+    .bindPopup(`<strong>${p.nom}</strong><br>Statut : ${p.statut}<br><small>Position à ${p.maj}</small>`);
+});
+
+if (points.length) {
+  const bounds = L.latLngBounds(points.map(p => [p.lat, p.lng]));
+  map.fitBounds(bounds, { padding: [40, 40] });
+}
+{% endif %}
+</script>
+{% endblock %}

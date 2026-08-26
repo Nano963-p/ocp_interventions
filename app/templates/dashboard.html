@@ -2,6 +2,32 @@
 {% block title %}Tableau de bord{% endblock %}
 {% block page_title %}Tableau de bord{% endblock %}
 {% block content %}
+{% if current_user.role == 'technicien' %}
+<div class="alert alert-light border d-flex justify-content-between align-items-center mb-3">
+  <span><i class="bi bi-geo-alt"></i> Partagez votre position pour que le planificateur puisse vous localiser.</span>
+  <button class="btn btn-sm btn-outline-success" onclick="partagerPosition()">
+    <i class="bi bi-broadcast"></i> Partager ma position</button>
+</div>
+<form id="formPosition" method="post" action="{{ url_for('techniciens.maj_position') }}" style="display:none;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="latitude" id="posLat">
+  <input type="hidden" name="longitude" id="posLng">
+</form>
+<script>
+function partagerPosition() {
+  if (!navigator.geolocation) { alert("Géolocalisation non supportée par ce navigateur."); return; }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      document.getElementById('posLat').value = pos.coords.latitude;
+      document.getElementById('posLng').value = pos.coords.longitude;
+      document.getElementById('formPosition').submit();
+    },
+    () => alert("Impossible d'obtenir votre position. Vérifiez les autorisations du navigateur.")
+  );
+}
+</script>
+{% endif %}
+
 <div class="row g-3 mb-4">
   <div class="col-6 col-md-2"><div class="card card-kpi"><div class="card-body text-center">
     <div class="value text-primary">{{ stats.nb_demandes }}</div><small class="text-muted">Demandes</small></div></div></div>

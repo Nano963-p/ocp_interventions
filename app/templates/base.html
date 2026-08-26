@@ -60,6 +60,8 @@
   {% endif %}
   <a href="{{ url_for('rapports.global_report') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('rapports') }}">
     <i class="bi bi-file-earmark-bar-graph"></i> Rapports</a>
+  <a href="{{ url_for('techniciens.carte') }}" class="{{ 'active' if request.endpoint == 'techniciens.carte' }}">
+    <i class="bi bi-geo-alt"></i> Carte techniciens</a>
 </nav>
 {% endif %}
 

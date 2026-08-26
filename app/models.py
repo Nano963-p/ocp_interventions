@@ -56,6 +56,10 @@ class Technicien(db.Model):
     telephone = db.Column(db.String(30), nullable=False, default='')
     statut = db.Column(db.String(20), nullable=False, default='disponible')  # disponible | occupe | absent
 
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
+    derniere_position = db.Column(db.DateTime, nullable=True)
+
     interventions = db.relationship('Intervention', backref='technicien', lazy=True)
 
     def charge_active(self):
