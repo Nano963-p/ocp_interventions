@@ -139,9 +139,9 @@ def utiliser_piece(intervention_id):
     iv = Intervention.query.get_or_404(intervention_id)
     _verifier_acces(iv)
 
-    if iv.statut not in ('En cours', 'Terminée'):
+    if iv.statut != 'En cours':
         flash("Le prélèvement de pièces n'est possible que sur une intervention "
-              "en cours ou terminée.", 'warning')
+              "en cours.", 'warning')
         return redirect(url_for('interventions.detail', intervention_id=iv.id))
 
     piece = Piece.query.get_or_404(int(request.form['piece_id']))

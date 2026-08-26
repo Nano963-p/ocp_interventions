@@ -82,7 +82,7 @@
           <tfoot><tr><th colspan="2">Total</th><th>{{ '%.2f' | format(iv.cout_pieces()) }} MAD</th><th></th></tr></tfoot>
           {% endif %}
         </table>
-        {% if pieces and (current_user.is_planificateur or (current_user.role == 'technicien' and current_user.technicien_id == iv.technicien_id)) %}
+        {% if pieces and iv.statut == 'En cours' and (current_user.is_planificateur or (current_user.role == 'technicien' and current_user.technicien_id == iv.technicien_id)) %}
         <form method="post" action="{{ url_for('interventions.utiliser_piece', intervention_id=iv.id) }}"
           class="row g-2">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
