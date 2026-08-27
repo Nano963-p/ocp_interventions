@@ -407,7 +407,7 @@ SQLite exige un nom explicite pour toute contrainte unique ajoutée en mode batc
 
 ## Auteur
 
-Projet réalisé dans le cadre d'un stage à Digiself OCP Khouribga.
+Projet réalisé par El Hynani Manar dans le cadre d'un stage à Digital Corner OCP Khouribga.
 
 École Nationale des Sciences Appliquées de Khouribga (ENSA Khouribga)
 Filière Génie Informatique — Université Sultan Moulay Slimane
