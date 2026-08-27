@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.gitignore
+instance/
+interventions.db
+.env
+migrations/versions/__pycache__/
+.pytest_cache/
+*.md

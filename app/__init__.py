@@ -59,10 +59,4 @@ def create_app():
         from flask import render_template
         return render_template('errors/404.html'), 404
 
-
-    # with app.app_context():
-    #     pass
-    #     from .seed import seed_if_empty
-    #     seed_if_empty()
-
     return app
