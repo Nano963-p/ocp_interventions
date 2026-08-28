@@ -1,34 +1,266 @@
-{% extends "base.html" %}
-{% block title %}Connexion{% endblock %}
-{% block content %}
-<div class="container" style="max-width: 460px; margin-top: 6vh;">
-  <div class="card card-kpi">
-    <div class="card-body p-4">
-      <div class="text-center mb-4">
-        <i class="bi bi-gear-wide-connected" style="font-size: 3rem; color: #00843d;"></i>
-        <h4 class="mt-2">OCP Khouribga</h4>
-        <p class="text-muted">Gestion des Interventions</p>
-      </div>
-      <form method="post">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="mb-3">
-          <label class="form-label">Nom d'utilisateur</label>
-          <input type="text" name="username" class="form-control" required autofocus>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Connexion — OCP Khouribga</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ocp-green: #1a9245;
+      --ocp-green-dark: #0d5c2a;
+      --ocp-green-light: #e8f5ec;
+    }
+    * { font-family: 'Poppins', sans-serif; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f0f2f0;
+    }
+    .login-shell {
+      display: flex;
+      width: 100%;
+      max-width: 1100px;
+      min-height: 640px;
+      margin: 2rem;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 30px 60px rgba(13, 92, 42, 0.18);
+    }
+
+    /* ---------- Panneau gauche : formulaire ---------- */
+    .login-form-panel {
+      flex: 1;
+      background: #fff;
+      padding: 3.5rem 3rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .brand-row { display: flex; align-items: center; gap: .6rem; margin-bottom: 2.5rem; }
+    .brand-row img { height: 34px; }
+    .brand-row span { font-weight: 700; font-size: 1.1rem; color: #1c2b22; }
+
+    .welcome-title { font-weight: 800; font-size: 1.9rem; color: #12261a; margin-bottom: .4rem; }
+    .welcome-sub { color: #6b7d72; margin-bottom: 2rem; font-size: .95rem; }
+
+    .form-label { font-weight: 600; font-size: .85rem; color: #2b3b31; }
+    .input-icon-group {
+      position: relative;
+    }
+    .input-icon-group i {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      color: #9aa8a0; font-size: 1rem;
+    }
+    .input-icon-group input {
+      padding-left: 42px;
+      height: 50px;
+      border-radius: 12px;
+      border: 1.5px solid #e3e8e4;
+      transition: all .2s;
+    }
+    .input-icon-group input:focus {
+      border-color: var(--ocp-green);
+      box-shadow: 0 0 0 4px rgba(26, 146, 69, 0.12);
+    }
+    .toggle-pwd {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      color: #9aa8a0; cursor: pointer; background: none; border: none; font-size: 1rem;
+    }
+
+    .btn-ocp {
+      height: 52px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--ocp-green), var(--ocp-green-dark));
+      border: none;
+      font-weight: 600;
+      font-size: 1rem;
+      color: #fff;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .btn-ocp:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(26, 146, 69, 0.3);
+      color: #fff;
+    }
+
+    .demo-box {
+      margin-top: 1.8rem;
+      background: var(--ocp-green-light);
+      border-radius: 14px;
+      padding: 1rem 1.2rem;
+      font-size: .82rem;
+      color: #2b4a37;
+    }
+    .demo-box strong { color: var(--ocp-green-dark); }
+    .demo-row { display: flex; align-items: center; gap: .5rem; margin-top: .35rem; }
+
+    /* ---------- Panneau droit : visuel de marque ---------- */
+    .login-visual-panel {
+      flex: 1;
+      background:
+        radial-gradient(circle at 15% 15%, rgba(255,255,255,0.08), transparent 40%),
+        linear-gradient(155deg, #0d5c2a 0%, #124a26 55%, #0a2e18 100%);
+      position: relative;
+      padding: 3rem 2.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+    .login-visual-panel::before {
+      content: "";
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-size: 34px 34px;
+    }
+
+    .visual-header { position: relative; z-index: 2; display: flex; align-items: center; gap: .6rem; }
+    .visual-header img { height: 30px; filter: brightness(0) invert(1); }
+    .visual-header span { color: #fff; font-weight: 700; letter-spacing: .5px; }
+
+    .floating-cards { position: relative; z-index: 2; flex: 1; margin-top: 2rem; }
+
+    .glass-card {
+      position: absolute;
+      background: rgba(255,255,255,0.97);
+      border-radius: 16px;
+      padding: 1rem 1.2rem;
+      box-shadow: 0 16px 32px rgba(0,0,0,0.25);
+      width: 250px;
+    }
+    .card-1 { top: 0; left: 0; }
+    .card-2 { top: 130px; right: 0; width: 220px; }
+    .card-3 { top: 270px; left: 20px; width: 230px; }
+
+    .glass-card .card-label { font-size: .72rem; color: #7a8c81; font-weight: 500; }
+    .glass-card .card-value { font-size: 1.3rem; font-weight: 800; color: #12261a; }
+    .glass-card .card-sub { font-size: .72rem; color: #9aa8a0; margin-top: .1rem; }
+    .badge-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+    .dot-green { background: var(--ocp-green); }
+    .dot-orange { background: #f0a53c; }
+    .dot-red { background: #e05656; }
+    .progress-mini { height: 6px; border-radius: 4px; background: #eef1ee; overflow: hidden; margin-top: .5rem; }
+    .progress-mini > div { height: 100%; background: var(--ocp-green); border-radius: 4px; }
+
+    .visual-footer { position: relative; z-index: 2; margin-top: 1rem; }
+    .visual-footer h2 { color: #fff; font-weight: 800; font-size: 1.6rem; line-height: 1.25; margin-bottom: .4rem; }
+    .visual-footer p { color: rgba(255,255,255,0.7); font-size: .88rem; margin: 0; }
+
+    @media (max-width: 900px) {
+      .login-visual-panel { display: none; }
+      .login-form-panel { padding: 2.5rem 1.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-shell">
+
+  <!-- ================= Panneau formulaire ================= -->
+  <div class="login-form-panel">
+    <div class="brand-row">
+      <img src="{{ url_for('static', filename='img/ocp_logo.png') }}" alt="OCP">
+      <span>Khouribga</span>
+    </div>
+
+    <div class="welcome-title">Bienvenue 👋</div>
+    <div class="welcome-sub">Connectez-vous pour accéder à la gestion des interventions.</div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} py-2 small">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="mb-3">
+        <label class="form-label">Nom d'utilisateur</label>
+        <div class="input-icon-group">
+          <i class="bi bi-person"></i>
+          <input type="text" name="username" class="form-control" placeholder="Votre identifiant" required autofocus>
         </div>
-        <div class="mb-3">
-          <label class="form-label">Mot de passe</label>
-          <input type="password" name="password" class="form-control" required>
-        </div>
-        <button class="btn btn-success w-100"><i class="bi bi-box-arrow-in-right"></i> Se connecter</button>
-      </form>
-      <hr>
-      <div class="small text-muted">
-        <strong>Comptes de démonstration :</strong><br>
-        <i class="bi bi-person-badge"></i> admin / admin123 (administrateur)<br>
-        <i class="bi bi-calendar-check"></i> planif / planif123 (planificateur)<br>
-        <i class="bi bi-tools"></i> ahmed / tech123 (technicien)
       </div>
+
+      <div class="mb-3">
+        <label class="form-label">Mot de passe</label>
+        <div class="input-icon-group">
+          <i class="bi bi-lock"></i>
+          <input type="password" name="password" id="pwdField" class="form-control" placeholder="Votre mot de passe" required>
+          <button type="button" class="toggle-pwd" onclick="togglePwd()"><i class="bi bi-eye" id="pwdIcon"></i></button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-ocp w-100 mt-2">
+        <i class="bi bi-box-arrow-in-right me-1"></i> Se connecter
+      </button>
+    </form>
+
+    <div class="demo-box">
+      <strong><i class="bi bi-info-circle"></i> Comptes de démonstration</strong>
+      <div class="demo-row"><span class="badge-dot dot-green"></span> admin / admin123 — Administrateur</div>
+      <div class="demo-row"><span class="badge-dot dot-orange"></span> planif / planif123 — Planificateur</div>
+      <div class="demo-row"><span class="badge-dot dot-red"></span> ahmed / tech123 — Technicien</div>
     </div>
   </div>
+
+  <!-- ================= Panneau visuel ================= -->
+  <div class="login-visual-panel">
+    <div class="visual-header">
+      <img src="{{ url_for('static', filename='img/ocp_logo.png') }}" alt="OCP">
+      <span>OCP GROUP · DIGITAL CORNER</span>
+    </div>
+
+    <div class="floating-cards">
+      <div class="glass-card card-1">
+        <div class="card-label">Interventions actives</div>
+        <div class="card-value">12</div>
+        <div class="card-sub"><span class="badge-dot dot-orange"></span>3 en cours · 9 planifiées</div>
+      </div>
+
+      <div class="glass-card card-2">
+        <div class="card-label">Taux de résolution</div>
+        <div class="card-value">87%</div>
+        <div class="progress-mini"><div style="width:87%"></div></div>
+      </div>
+
+      <div class="glass-card card-3">
+        <div class="card-label">Stock pièces critiques</div>
+        <div class="card-value">2 <span style="font-size:.8rem;font-weight:600;color:#e05656;">alertes</span></div>
+        <div class="card-sub"><span class="badge-dot dot-red"></span>Joint hydraulique DN50</div>
+      </div>
+    </div>
+
+    <div class="visual-footer">
+      <h2>Optimisez vos interventions<br>grâce à l'aide à la décision</h2>
+      <p>Priorisation intelligente, suivi temps réel et gestion des stocks, réunis dans un seul espace.</p>
+    </div>
+  </div>
+
 </div>
-{% endblock %}
+
+<script>
+function togglePwd() {
+  const field = document.getElementById('pwdField');
+  const icon = document.getElementById('pwdIcon');
+  if (field.type === 'password') {
+    field.type = 'text';
+    icon.classList.replace('bi-eye', 'bi-eye-slash');
+  } else {
+    field.type = 'password';
+    icon.classList.replace('bi-eye-slash', 'bi-eye');
+  }
+}
+</script>
+
+</body>
+</html>
