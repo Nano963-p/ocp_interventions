@@ -14,23 +14,19 @@
       --ocp-green-light: #e8f5ec;
     }
     * { font-family: 'Poppins', sans-serif; }
-    body {
+    html, body {
       margin: 0;
-      min-height: 100vh;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+    body {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #f0f2f0;
     }
     .login-shell {
       display: flex;
       width: 100%;
-      max-width: 1100px;
-      min-height: 640px;
-      margin: 2rem;
-      border-radius: 24px;
-      overflow: hidden;
-      box-shadow: 0 30px 60px rgba(13, 92, 42, 0.18);
+      height: 100vh;
     }
 
     /* ---------- Panneau gauche : formulaire ---------- */
@@ -40,42 +36,80 @@
       padding: 3.5rem 3rem;
       display: flex;
       flex-direction: column;
+      align-items: center;
       justify-content: center;
+    }
+    .login-form-inner {
+      width: 100%;
+      max-width: 420px;
     }
     .brand-row { display: flex; align-items: center; gap: .6rem; margin-bottom: 2.5rem; }
     .brand-row img { height: 34px; }
     .brand-row span { font-weight: 700; font-size: 1.1rem; color: #1c2b22; }
 
-    .welcome-title { font-weight: 800; font-size: 1.9rem; color: #12261a; margin-bottom: .4rem; }
-    .welcome-sub { color: #6b7d72; margin-bottom: 2rem; font-size: .95rem; }
+    .welcome-title { font-weight: 800; font-size: 1.6rem; color: #12261a; margin-bottom: .3rem; }
+    .welcome-sub { color: #6b7d72; margin-bottom: 1.5rem; font-size: .9rem; }
 
     .form-label { font-weight: 600; font-size: .85rem; color: #2b3b31; }
+
     .input-icon-group {
-      position: relative;
-    }
-    .input-icon-group i {
-      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
-      color: #9aa8a0; font-size: 1rem;
-    }
-    .input-icon-group input {
-      padding-left: 42px;
-      height: 50px;
-      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      width: 100%;
+      height: 46px;
       border: 1.5px solid #e3e8e4;
-      transition: all .2s;
+      border-radius: 10px;
+      background: #fff;
+      transition: border-color .2s, box-shadow .2s;
+      overflow: hidden;
     }
-    .input-icon-group input:focus {
+    .input-icon-group:focus-within {
       border-color: var(--ocp-green);
       box-shadow: 0 0 0 4px rgba(26, 146, 69, 0.12);
     }
+    .input-icon-group i {
+      flex: 0 0 auto;
+      color: #9aa8a0;
+      font-size: 1rem;
+      padding-left: 14px;
+    }
+    .input-icon-group input {
+      flex: 1 1 auto;
+      width: 100%;
+      min-width: 0;
+      height: 100%;
+      border: none;
+      outline: none;
+      padding: 0 12px;
+      background: transparent;
+      box-shadow: none !important;
+    }
     .toggle-pwd {
-      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
-      color: #9aa8a0; cursor: pointer; background: none; border: none; font-size: 1rem;
+      flex: 0 0 auto;
+      color: #9aa8a0;
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-size: 1rem;
+      padding: 0 14px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+    }
+    /* Désactive l'icône native "afficher le mot de passe" du navigateur (Edge/Chrome) */
+    input[type="password"]::-ms-reveal,
+    input[type="password"]::-ms-clear {
+      display: none;
+    }
+    input::-webkit-credentials-auto-fill-button,
+    input::-webkit-strong-password-auto-fill-button {
+      display: none !important;
+      visibility: hidden;
     }
 
     .btn-ocp {
-      height: 52px;
-      border-radius: 12px;
+      height: 48px;
+      border-radius: 10px;
       background: linear-gradient(135deg, var(--ocp-green), var(--ocp-green-dark));
       border: none;
       font-weight: 600;
@@ -166,6 +200,7 @@
 
   <!-- ================= Panneau formulaire ================= -->
   <div class="login-form-panel">
+   <div class="login-form-inner">
     <div class="brand-row">
       <img src="{{ url_for('static', filename='img/ocp_logo.png') }}" alt="OCP">
       <span>Khouribga</span>
@@ -183,19 +218,19 @@
     <form method="post">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-      <div class="mb-3">
+      <div class="mb-2">
         <label class="form-label">Nom d'utilisateur</label>
         <div class="input-icon-group">
           <i class="bi bi-person"></i>
-          <input type="text" name="username" class="form-control" placeholder="Votre identifiant" required autofocus>
+          <input type="text" name="username" placeholder="Votre identifiant" required autofocus>
         </div>
       </div>
 
-      <div class="mb-3">
+      <div class="mb-2">
         <label class="form-label">Mot de passe</label>
         <div class="input-icon-group">
           <i class="bi bi-lock"></i>
-          <input type="password" name="password" id="pwdField" class="form-control" placeholder="Votre mot de passe" required>
+          <input type="password" name="password" id="pwdField" placeholder="Votre mot de passe" required>
           <button type="button" class="toggle-pwd" onclick="togglePwd()"><i class="bi bi-eye" id="pwdIcon"></i></button>
         </div>
       </div>
@@ -211,6 +246,7 @@
       <div class="demo-row"><span class="badge-dot dot-orange"></span> planif / planif123 — Planificateur</div>
       <div class="demo-row"><span class="badge-dot dot-red"></span> ahmed / tech123 — Technicien</div>
     </div>
+   </div>
   </div>
 
   <!-- ================= Panneau visuel ================= -->
