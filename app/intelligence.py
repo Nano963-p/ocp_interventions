@@ -10,6 +10,9 @@ Fournit :
      techniciens, demandes à risque de dépassement d'échéance (SLA).
   4. Prévisions de consommation des pièces détachées.
 """
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
 from datetime import date, datetime, timedelta
 
 from . import db
@@ -267,3 +270,49 @@ def calculer_kpis():
         'taux_retard': taux_retard,
         'nb_demandes_retard': demandes_retard,
     }
+
+# ---------------------------------------------------------------------------
+# 8. Moteur de cas similaires — recherche de précédents par vectorisation
+#    TF-IDF + similarité cosinus 
+# ---------------------------------------------------------------------------
+
+def rechercher_cas_similaires(demande, top_n=5, seuil_minimal=0.02):
+    """
+    ...
+    """
+    interventions_passees = (Intervention.query
+                              .filter(Intervention.statut == 'Terminée')
+                              .join(Demande)
+                              .all())
+    if len(interventions_passees) < 2:
+        return []
+
+    texte_demande = f"{demande.titre} {demande.description or ''}"
+    textes_historique = []
+    for iv in interventions_passees:
+        texte = (f"{iv.demande.titre} {iv.demande.description or ''} "
+                 f"{iv.observations or ''} {iv.rapport or ''}")
+        textes_historique.append(texte)
+
+    corpus = [texte_demande] + textes_historique
+
+    vectorizer = TfidfVectorizer(lowercase=True, ngram_range=(1, 1))  # unigrammes seulement
+    try:
+        matrice = vectorizer.fit_transform(corpus)
+    except ValueError:
+        return []
+
+    vecteur_demande = matrice[0:1]
+    vecteurs_historique = matrice[1:]
+    similarites = cosine_similarity(vecteur_demande, vecteurs_historique)[0]
+
+    resultats = []
+    for iv, sim in zip(interventions_passees, similarites):
+        if sim >= seuil_minimal:
+            resultats.append({
+                'intervention': iv,
+                'score_similarite': round(float(sim) * 100, 1),
+            })
+
+    resultats.sort(key=lambda r: r['score_similarite'], reverse=True)
+    return resultats[:top_n]

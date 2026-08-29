@@ -76,13 +76,16 @@ def detail(demande_id):
     d = Demande.query.get_or_404(demande_id)
     suggestions = []
     analyse = None
+    cas_similaires = []
     if d.statut == 'Nouvelle':
         suggestions = intelligence.scorer_techniciens(d)
         prio, score, raisons = intelligence.analyser_priorite(
             d.titre, d.description, d.impact, d.date_echeance)
         analyse = {'priorite': prio, 'score': score, 'raisons': raisons}
+        cas_similaires = intelligence.rechercher_cas_similaires(d)
     return render_template('demandes/detail.html', demande=d,
-                           suggestions=suggestions, analyse=analyse)
+                           suggestions=suggestions, analyse=analyse,
+                           cas_similaires=cas_similaires)
 
 
 @bp.route('/<int:demande_id>/planifier', methods=['POST'])

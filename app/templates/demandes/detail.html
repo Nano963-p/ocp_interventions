@@ -110,5 +110,38 @@
     </div>
   </div>
   {% endif %}
+  {% if demande.statut == 'Nouvelle' %}
+<div class="col-lg-12 mt-3">
+  <div class="card card-kpi">
+    <div class="card-body">
+      <h5><i class="bi bi-clock-history text-primary"></i> Cas similaires dans l'historique (Machine Learning — TF-IDF)</h5>
+      <p class="text-muted small">
+        Recherche par similarité textuelle (vectorisation TF-IDF + similarité cosinus)
+        parmi les interventions déjà terminées, sur la base des titres, descriptions,
+        observations terrain et rapports techniques.
+      </p>
+      {% if cas_similaires %}
+        {% for c in cas_similaires %}
+        <div class="border rounded p-2 mb-2">
+          <div class="d-flex justify-content-between align-items-center">
+            <strong>{{ c.intervention.demande.titre }}</strong>
+            <span class="badge text-bg-primary">{{ c.score_similarite }}% similaire</span>
+          </div>
+          <small class="text-muted">
+            Technicien : {{ c.intervention.technicien.nom }} ·
+            Durée : {{ c.intervention.duree_heures() }} h ·
+            Clôturée le {{ c.intervention.date_fin.strftime('%d/%m/%Y') if c.intervention.date_fin else '—' }}
+          </small>
+          <p class="small mb-0 mt-1"><strong>Rapport :</strong> {{ c.intervention.rapport }}</p>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="text-muted mb-0"><i class="bi bi-info-circle"></i>
+          Aucun cas historique suffisamment proche trouvé pour cette demande.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
 </div>
 {% endblock %}
