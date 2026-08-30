@@ -338,18 +338,17 @@ def synthetiser_recommandation_ia(demande, cas_similaires):
     import os
 
     if not cas_similaires:
-        return None  # rien à synthétiser sans preuves : pas d'appel LLM
+        return None
 
     try:
-        import anthropic
+        from groq import Groq
     except ImportError:
         return None
 
-    api_key = os.environ.get('ANTHROPIC_API_KEY')
+    api_key = os.environ.get('GROQ_API_KEY')
     if not api_key:
         return None
 
-    # Construction du contexte factuel (les "preuves") à partir des cas réels
     contexte_cas = ""
     for i, c in enumerate(cas_similaires, start=1):
         iv = c['intervention']
@@ -386,12 +385,12 @@ dans les cas fournis. Si les cas sont trop différents pour conclure
 clairement, dis-le honnêtement plutôt que de forcer une conclusion."""
 
     try:
-        message = anthropic.Anthropic(api_key=api_key).messages.create(
-            model="claude-haiku-4-5-20251001",
+        client = Groq(api_key=api_key)
+        completion = client.chat.completions.create(
+            model="openai/gpt-oss-120b",
             max_tokens=350,
             messages=[{"role": "user", "content": prompt}]
         )
-        return message.content[0].text
+        return completion.choices[0].message.content
     except Exception:
-        print(f"[DEBUG synthese_ia] Erreur: {e}")
         return None
