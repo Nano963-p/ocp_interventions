@@ -287,7 +287,7 @@ flask db migrate -m "description du changement"
 flask db upgrade
 ```
 
-> **Note technique** : le seed de données de démonstration (`app/seed.py`) n'est déclenché que par `python run.py`, jamais par les commandes `flask db`. Le jeu de données inclut 21 interventions terminées réparties en 5 familles de pannes (mécanique, hydraulique, électrique, instrumentation, informatique) avec des observations et rapports textuellement variés, conçues pour démontrer le moteur de cas similaires.
+> **Note technique** : le seed de données de démonstration (`app/seed.py`) n'est déclenché que par `python run.py`, jamais par les commandes `flask db`. Le jeu de données inclut 18 interventions terminées réparties en 5 familles de pannes (mécanique, hydraulique, électrique, instrumentation, informatique) avec des observations et rapports textuellement variés, conçues pour démontrer le moteur de cas similaires.
 
 ---
 
@@ -375,7 +375,7 @@ docker run -p 5000:5000 --env-file .env ocp-interventions
 | `/demandes/nouvelle` | GET, POST | Création d'une demande |
 | `/demandes/<id>` | GET | Détail, suggestions de techniciens et cas similaires |
 | `/demandes/<id>/planifier` | POST | Planification |
-| `/demandes/<id>/synthese-ia` | POST | Génération de la synthèse IA ancrée sur les cas similaires |
+| `/demandes/<id>/synthese-ia` | GET | Génération de la synthèse IA ancrée sur les cas similaires |
 | `/interventions/<id>` | GET | Suivi d'une intervention |
 | `/interventions/<id>/statut` | POST | Changement de statut |
 | `/interventions/<id>/reaffecter` | POST | Réaffectation de technicien |
