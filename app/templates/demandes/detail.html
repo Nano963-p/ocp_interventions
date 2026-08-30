@@ -121,6 +121,18 @@
         observations terrain et rapports techniques.
       </p>
       {% if cas_similaires %}
+        <form method="post" action="{{ url_for('demandes.synthese_ia', demande_id=demande.id) }}" class="mb-3">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-stars"></i> Générer une synthèse IA à partir de ces cas</button>
+        </form>
+
+        {% if synthese_ia %}
+        <div class="alert alert-primary">
+          <strong><i class="bi bi-robot"></i> Synthèse basée sur les cas ci-dessous :</strong>
+          <p class="mb-0 mt-1">{{ synthese_ia }}</p>
+        </div>
+        {% endif %}
         {% for c in cas_similaires %}
         <div class="border rounded p-2 mb-2">
           <div class="d-flex justify-content-between align-items-center">

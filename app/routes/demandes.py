@@ -83,9 +83,9 @@ def detail(demande_id):
             d.titre, d.description, d.impact, d.date_echeance)
         analyse = {'priorite': prio, 'score': score, 'raisons': raisons}
         cas_similaires = intelligence.rechercher_cas_similaires(d)
-    return render_template('demandes/detail.html', demande=d,
+        return render_template('demandes/detail.html', demande=d,
                            suggestions=suggestions, analyse=analyse,
-                           cas_similaires=cas_similaires)
+                           cas_similaires=cas_similaires, synthese_ia=None)
 
 
 @bp.route('/<int:demande_id>/planifier', methods=['POST'])
@@ -119,3 +119,27 @@ def annuler(demande_id):
     db.session.commit()
     flash(f"Demande #{d.id} annulée.", 'info')
     return redirect(url_for('demandes.liste'))
+
+
+@bp.route('/<int:demande_id>/synthese-ia', methods=['POST'])
+@login_required
+def synthese_ia(demande_id):
+    d = Demande.query.get_or_404(demande_id)
+    cas_similaires = intelligence.rechercher_cas_similaires(d)
+    synthese = intelligence.synthetiser_recommandation_ia(d, cas_similaires)
+
+    suggestions = intelligence.scorer_techniciens(d) if d.statut == 'Nouvelle' else []
+    prio, score, raisons = intelligence.analyser_priorite(
+        d.titre, d.description, d.impact, d.date_echeance)
+    analyse = {'priorite': prio, 'score': score, 'raisons': raisons}
+
+    if synthese is None:
+        flash("La synthèse IA n'est pas disponible pour le moment "
+              "(aucun cas suffisamment proche, ou service indisponible). "
+              "Les cas similaires bruts restent consultables ci-dessous.", 'warning')
+    else:
+        flash("Synthèse générée à partir des cas similaires trouvés.", 'success')
+
+    return render_template('demandes/detail.html', demande=d,
+                           suggestions=suggestions, analyse=analyse,
+                           cas_similaires=cas_similaires, synthese_ia=synthese)

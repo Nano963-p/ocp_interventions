@@ -272,7 +272,7 @@ def calculer_kpis():
     }
 
 # ---------------------------------------------------------------------------
-# 8. Moteur de cas similaires — recherche de précédents par vectorisation
+# 7. Moteur de cas similaires — recherche de précédents par vectorisation
 #    TF-IDF + similarité cosinus 
 # ---------------------------------------------------------------------------
 
@@ -316,3 +316,82 @@ def rechercher_cas_similaires(demande, top_n=5, seuil_minimal=0.02):
 
     resultats.sort(key=lambda r: r['score_similarite'], reverse=True)
     return resultats[:top_n]
+
+# ---------------------------------------------------------------------------
+# 8. Synthèse IA ancrée (RAG) — recommandation basée sur les cas similaires
+#    réellement retrouvés par rechercher_cas_similaires(). Le LLM ne fait
+#    JAMAIS de diagnostic à l'aveugle : il synthétise uniquement à partir
+#    des preuves fournies (cas réels de la base), ce qui limite le risque
+#    d'hallucination et permet une citation explicite des sources.
+# ---------------------------------------------------------------------------
+
+def synthetiser_recommandation_ia(demande, cas_similaires):
+    """
+    Génère une synthèse en langage naturel à partir des cas similaires
+    retrouvés localement (rechercher_cas_similaires). Ne fait aucun appel
+    LLM si aucun cas similaire n'a été trouvé — le grounding est obligatoire.
+
+    Retourne un str (la synthèse), ou None en cas d'indisponibilité de l'IA
+    (l'appelant doit prévoir un repli gracieux vers les cas bruts déjà
+    affichés, qui restent utiles sans la synthèse).
+    """
+    import os
+
+    if not cas_similaires:
+        return None  # rien à synthétiser sans preuves : pas d'appel LLM
+
+    try:
+        import anthropic
+    except ImportError:
+        return None
+
+    api_key = os.environ.get('ANTHROPIC_API_KEY')
+    if not api_key:
+        return None
+
+    # Construction du contexte factuel (les "preuves") à partir des cas réels
+    contexte_cas = ""
+    for i, c in enumerate(cas_similaires, start=1):
+        iv = c['intervention']
+        contexte_cas += (
+            f"\nCas {i} (similarité {c['score_similarite']}%) — "
+            f"« {iv.demande.titre} » traité par {iv.technicien.nom} "
+            f"en {iv.duree_heures()} h :\n"
+            f"  Observations : {iv.observations}\n"
+            f"  Rapport : {iv.rapport}\n"
+        )
+
+    prompt = f"""Tu es un assistant qui aide un planificateur de maintenance
+industrielle à s'appuyer sur l'historique des interventions passées.
+
+Nouvelle demande à traiter :
+Titre : {demande.titre}
+Description : {demande.description or 'non renseignée'}
+
+Voici les cas historiques les plus similaires retrouvés dans la base
+(par similarité textuelle) :
+{contexte_cas}
+
+Rédige une synthèse courte (4-5 phrases maximum) à destination du
+planificateur, qui :
+1. identifie le point commun probable entre cette demande et les cas
+   historiques ci-dessus ;
+2. mentionne explicitement quel(s) cas (par son numéro, ex. "Cas 1")
+   appuie(nt) cette hypothèse ;
+3. suggère, si pertinent, les pièces ou la durée à anticiper, en te
+   basant UNIQUEMENT sur ce qui est écrit dans les cas fournis ci-dessus.
+
+Ne suppose et n'invente aucune information qui ne figure pas explicitement
+dans les cas fournis. Si les cas sont trop différents pour conclure
+clairement, dis-le honnêtement plutôt que de forcer une conclusion."""
+
+    try:
+        message = anthropic.Anthropic(api_key=api_key).messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=350,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return message.content[0].text
+    except Exception:
+        print(f"[DEBUG synthese_ia] Erreur: {e}")
+        return None
