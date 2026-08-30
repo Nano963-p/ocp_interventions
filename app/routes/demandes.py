@@ -83,7 +83,7 @@ def detail(demande_id):
             d.titre, d.description, d.impact, d.date_echeance)
         analyse = {'priorite': prio, 'score': score, 'raisons': raisons}
         cas_similaires = intelligence.rechercher_cas_similaires(d)
-        return render_template('demandes/detail.html', demande=d,
+    return render_template('demandes/detail.html', demande=d,
                            suggestions=suggestions, analyse=analyse,
                            cas_similaires=cas_similaires, synthese_ia=None)
 
@@ -121,7 +121,7 @@ def annuler(demande_id):
     return redirect(url_for('demandes.liste'))
 
 
-@bp.route('/<int:demande_id>/synthese-ia', methods=['POST'])
+@bp.route('/<int:demande_id>/synthese-ia', methods=['GET'])
 @login_required
 def synthese_ia(demande_id):
     d = Demande.query.get_or_404(demande_id)
