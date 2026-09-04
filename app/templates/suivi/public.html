@@ -37,7 +37,6 @@
   <div class="card mb-3">
     <div class="card-body">
       <h5>{{ demande.titre }}</h5>
-      <p class="text-muted mb-2">{{ demande.description or "" }}</p>
       <span class="badge badge-{{ demande.priorite }}">{{ demande.priorite }}</span>
       <span class="badge badge-{{ demande.statut.replace(' ', '-') }}">{{ demande.statut }}</span>
       <hr>
@@ -47,8 +46,8 @@
       </div>
       <div class="step {{ 'done' if demande.statut in ('En cours','Terminée') else ('active' if demande.statut == 'Planifiée' else 'todo') }}">
         <span class="dot"></span> Intervention planifiée
-        {% if demande.intervention %}
-        <small class="text-muted ms-2">{{ demande.intervention.date_planifiee.strftime('%d/%m/%Y') }}</small>
+        {% if demande.date_planifiee %}
+        <small class="text-muted ms-2">{{ demande.date_planifiee.strftime('%d/%m/%Y') }}</small>
         {% endif %}
       </div>
       <div class="step {{ 'done' if demande.statut == 'Terminée' else ('active' if demande.statut == 'En cours' else 'todo') }}">
@@ -56,8 +55,8 @@
       </div>
       <div class="step {{ 'done' if demande.statut == 'Terminée' else 'todo' }}">
         <span class="dot"></span> Intervention terminée
-        {% if demande.intervention and demande.intervention.date_fin %}
-        <small class="text-muted ms-2">{{ demande.intervention.date_fin.strftime('%d/%m/%Y %H:%M') }}</small>
+        {% if demande.date_fin %}
+        <small class="text-muted ms-2">{{ demande.date_fin.strftime('%d/%m/%Y %H:%M') }}</small>
         {% endif %}
       </div>
       {% if demande.statut == 'Annulée' %}
@@ -65,24 +64,6 @@
       {% endif %}
     </div>
   </div>
-
-  {% if demande.intervention and demande.intervention.technicien %}
-  <div class="card mb-3">
-    <div class="card-body">
-      <h6><i class="bi bi-person-badge"></i> Technicien affecté</h6>
-      <p class="mb-0">{{ demande.intervention.technicien.nom }}</p>
-    </div>
-  </div>
-  {% endif %}
-
-  {% if demande.statut == 'Terminée' and demande.intervention %}
-  <div class="card">
-    <div class="card-body">
-      <h6><i class="bi bi-journal-check"></i> Compte-rendu</h6>
-      <p class="mb-0">{{ demande.intervention.rapport or "Rapport en cours de rédaction." }}</p>
-    </div>
-  </div>
-  {% endif %}
 
   <p class="text-center text-muted mt-3" style="font-size: .8rem;">
     Ce lien est personnel, ne le partagez pas. Pour toute question, contactez le service maintenance.</p>

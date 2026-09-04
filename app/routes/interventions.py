@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-"""Suivi des interventions : statuts en temps réel, pièces utilisées, messages."""
-from datetime import datetime
-
+"""Suivi opérationnel des interventions, pièces utilisées et messages."""
 from flask import (Blueprint, abort, flash, redirect, render_template,
                    request, url_for)
 from flask_login import current_user, login_required
+from sqlalchemy import update
 
 from .. import db
-from ..models import (Intervention, Message, Piece,Technicien, STATUTS_INTERVENTION,
-                      UtilisationPiece)
+from ..models import (Intervention, Message, Piece, Technicien,
+                      STATUTS_INTERVENTION, UtilisationPiece, utcnow)
 
-from .auth import role_required
+from .auth import can_access_intervention, role_required
+from ..validation import flash_errors, int_value, text_value
 
 bp = Blueprint('interventions', __name__, url_prefix='/interventions')
 
@@ -24,8 +24,7 @@ def _liberer_technicien(technicien):
 def _verifier_acces(iv):
     """Bloque l'accès si un technicien tente d'agir sur une intervention
     qui n'est pas la sienne (protection contre l'IDOR sur les routes POST)."""
-    if (current_user.role == 'technicien'
-            and current_user.technicien_id != iv.technicien_id):
+    if not can_access_intervention(iv):
         abort(403)
 
 
@@ -46,12 +45,13 @@ def liste():
 @bp.route('/<int:intervention_id>')
 @login_required
 def detail(intervention_id):
-    iv = Intervention.query.get_or_404(intervention_id)
-    if (current_user.role == 'technicien'
-            and current_user.technicien_id != iv.technicien_id):
+    iv = db.get_or_404(Intervention, intervention_id)
+    if not can_access_intervention(iv):
         abort(403)
-    pieces = Piece.query.order_by(Piece.nom).all()
-    techniciens = Technicien.query.order_by(Technicien.nom).all()
+    pieces = (Piece.query.order_by(Piece.nom).all()
+              if current_user.is_planificateur or iv.statut == 'En cours' else [])
+    techniciens = (Technicien.query.order_by(Technicien.nom).all()
+                   if current_user.is_planificateur else [])
     messages = (Message.query.filter_by(intervention_id=iv.id)
                 .order_by(Message.date.asc()).all())
     return render_template('interventions/detail.html', iv=iv, pieces=pieces,
@@ -62,22 +62,35 @@ def detail(intervention_id):
 @bp.route('/<int:intervention_id>/statut', methods=['POST'])
 @login_required
 def changer_statut(intervention_id):
-    iv = Intervention.query.get_or_404(intervention_id)
+    iv = db.get_or_404(Intervention, intervention_id)
     _verifier_acces(iv)
-    nouveau = request.form.get('statut')
+    nouveau = request.form.get('statut', '')
     if nouveau not in STATUTS_INTERVENTION:
         flash("Statut invalide.", 'danger')
+        return redirect(url_for('interventions.detail', intervention_id=iv.id))
+
+    transitions = {
+        'Planifiée': {'En cours', 'Annulée'},
+        'En cours': {'Terminée', 'Annulée'},
+        'Terminée': set(),
+        'Annulée': set(),
+    }
+    if nouveau != iv.statut and nouveau not in transitions.get(iv.statut, set()):
+        flash(f"Transition de « {iv.statut} » vers « {nouveau} » interdite.", 'danger')
+        return redirect(url_for('interventions.detail', intervention_id=iv.id))
+    if nouveau == iv.statut:
+        flash("L'intervention a déjà ce statut.", 'info')
         return redirect(url_for('interventions.detail', intervention_id=iv.id))
 
     iv.statut = nouveau
     if nouveau == 'En cours':
         if not iv.date_debut:
-            iv.date_debut = datetime.utcnow()
+            iv.date_debut = utcnow()
         iv.demande.statut = 'En cours'
         if iv.technicien:
             iv.technicien.statut = 'occupe'
     elif nouveau == 'Terminée':
-        iv.date_fin = datetime.utcnow()
+        iv.date_fin = utcnow()
         iv.demande.statut = 'Terminée'
         _liberer_technicien(iv.technicien)
     elif nouveau == 'Annulée':
@@ -94,12 +107,20 @@ def changer_statut(intervention_id):
 @bp.route('/<int:intervention_id>/reaffecter', methods=['POST'])
 @role_required('admin', 'planificateur')
 def reaffecter(intervention_id):
-    iv = Intervention.query.get_or_404(intervention_id)
+    iv = db.get_or_404(Intervention, intervention_id)
     if iv.statut in ('Terminée', 'Annulée'):
         flash("Impossible de réaffecter une intervention terminée ou annulée.", 'danger')
         return redirect(url_for('interventions.detail', intervention_id=iv.id))
 
-    nouveau_technicien = Technicien.query.get_or_404(int(request.form['technicien_id']))
+    technicien_id, errors = int_value(
+        request.form, 'technicien_id', 'Le technicien', minimum=1)
+    nouveau_technicien = (db.session.get(Technicien, technicien_id)
+                          if technicien_id else None)
+    if technicien_id and nouveau_technicien is None:
+        errors.append("Le technicien sélectionné n'existe pas.")
+    if errors:
+        flash_errors(flash, errors)
+        return redirect(url_for('interventions.detail', intervention_id=iv.id))
     if nouveau_technicien.id == iv.technicien_id:
         flash("Cette intervention est déjà affectée à ce technicien.", 'warning')
         return redirect(url_for('interventions.detail', intervention_id=iv.id))
@@ -124,10 +145,18 @@ def reaffecter(intervention_id):
 @bp.route('/<int:intervention_id>/observations', methods=['POST'])
 @login_required
 def observations(intervention_id):
-    iv = Intervention.query.get_or_404(intervention_id)
+    iv = db.get_or_404(Intervention, intervention_id)
     _verifier_acces(iv)
-    iv.observations = request.form.get('observations', '').strip()
-    iv.rapport = request.form.get('rapport', '').strip()
+    observations, errors = text_value(
+        request.form, 'observations', 'Les observations', max_length=10000)
+    rapport, new_errors = text_value(
+        request.form, 'rapport', 'Le rapport', max_length=10000)
+    errors += new_errors
+    if errors:
+        flash_errors(flash, errors)
+        return redirect(url_for('interventions.detail', intervention_id=iv.id))
+    iv.observations = observations
+    iv.rapport = rapport
     db.session.commit()
     flash("Observations et rapport enregistrés.", 'success')
     return redirect(url_for('interventions.detail', intervention_id=iv.id))
@@ -136,7 +165,7 @@ def observations(intervention_id):
 @bp.route('/<int:intervention_id>/piece', methods=['POST'])
 @login_required
 def utiliser_piece(intervention_id):
-    iv = Intervention.query.get_or_404(intervention_id)
+    iv = db.get_or_404(Intervention, intervention_id)
     _verifier_acces(iv)
 
     if iv.statut != 'En cours':
@@ -144,15 +173,29 @@ def utiliser_piece(intervention_id):
               "en cours.", 'warning')
         return redirect(url_for('interventions.detail', intervention_id=iv.id))
 
-    piece = Piece.query.get_or_404(int(request.form['piece_id']))
-    quantite = max(1, int(request.form.get('quantite', 1)))
+    piece_id, errors = int_value(request.form, 'piece_id', 'La pièce', minimum=1)
+    quantite, new_errors = int_value(
+        request.form, 'quantite', 'La quantité', minimum=1, maximum=100000,
+        default=1)
+    errors += new_errors
+    piece = db.session.get(Piece, piece_id) if piece_id else None
+    if piece_id and piece is None:
+        errors.append("La pièce sélectionnée n'existe pas.")
+    if errors:
+        flash_errors(flash, errors)
+        return redirect(url_for('interventions.detail', intervention_id=iv.id))
 
-    if piece.quantite < quantite:
+    result = db.session.execute(
+        update(Piece)
+        .where(Piece.id == piece.id, Piece.quantite >= quantite)
+        .values(quantite=Piece.quantite - quantite)
+    )
+    if result.rowcount != 1:
+        db.session.rollback()
         flash(f"Stock insuffisant pour « {piece.nom} » "
               f"(disponible : {piece.quantite}).", 'danger')
         return redirect(url_for('interventions.detail', intervention_id=iv.id))
 
-    piece.quantite -= quantite
     db.session.add(UtilisationPiece(intervention_id=iv.id, piece_id=piece.id,
                                     quantite=quantite))
     db.session.commit()
@@ -163,15 +206,15 @@ def utiliser_piece(intervention_id):
 @bp.route('/<int:intervention_id>/piece/<int:utilisation_id>/annuler', methods=['POST'])
 @login_required
 def annuler_piece(intervention_id, utilisation_id):
-    iv = Intervention.query.get_or_404(intervention_id)
+    iv = db.get_or_404(Intervention, intervention_id)
     _verifier_acces(iv)
 
-    if iv.statut == 'Terminée':
-        flash("Impossible de retirer une pièce d'une intervention déjà terminée. "
+    if iv.statut != 'En cours':
+        flash("Un prélèvement ne peut être annulé que pendant une intervention en cours. "
               "Ajustez le stock manuellement si nécessaire.", 'danger')
         return redirect(url_for('interventions.detail', intervention_id=iv.id))
 
-    utilisation = UtilisationPiece.query.get_or_404(utilisation_id)
+    utilisation = db.get_or_404(UtilisationPiece, utilisation_id)
     if utilisation.intervention_id != iv.id:
         abort(404)
 
@@ -189,12 +232,15 @@ def annuler_piece(intervention_id, utilisation_id):
 @bp.route('/<int:intervention_id>/message', methods=['POST'])
 @login_required
 def envoyer_message(intervention_id):
-    iv = Intervention.query.get_or_404(intervention_id)
+    iv = db.get_or_404(Intervention, intervention_id)
     _verifier_acces(iv)
-    contenu = request.form.get('contenu', '').strip()
-    if contenu:
-        db.session.add(Message(intervention_id=iv.id, user_id=current_user.id,
-                               contenu=contenu))
-        db.session.commit()
-        flash("Message envoyé.", 'success')
+    contenu, errors = text_value(request.form, 'contenu', 'Le message',
+                                 required=True, max_length=2000)
+    if errors:
+        flash_errors(flash, errors)
+        return redirect(url_for('interventions.detail', intervention_id=iv.id))
+    db.session.add(Message(intervention_id=iv.id, user_id=current_user.id,
+                           contenu=contenu))
+    db.session.commit()
+    flash("Message envoyé.", 'success')
     return redirect(url_for('interventions.detail', intervention_id=iv.id))

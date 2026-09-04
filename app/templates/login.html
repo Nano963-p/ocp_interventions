@@ -240,12 +240,12 @@
       </button>
     </form>
 
-    <div class="demo-box">
+    {% if config.DEMO_MODE %}<div class="demo-box">
       <strong><i class="bi bi-info-circle"></i> Comptes de démonstration</strong>
       <div class="demo-row"><span class="badge-dot dot-green"></span> admin / admin123 — Administrateur</div>
       <div class="demo-row"><span class="badge-dot dot-orange"></span> planif / planif123 — Planificateur</div>
       <div class="demo-row"><span class="badge-dot dot-red"></span> ahmed / tech123 — Technicien</div>
-    </div>
+    </div>{% endif %}
    </div>
   </div>
 
@@ -278,7 +278,7 @@
 
     <div class="visual-footer">
       <h2>Optimisez vos interventions<br>grâce à l'aide à la décision</h2>
-      <p>Priorisation intelligente, suivi temps réel et gestion des stocks, réunis dans un seul espace.</p>
+      <p>Priorisation par règles, suivi des états et gestion des stocks, réunis dans un seul espace.</p>
     </div>
   </div>
 

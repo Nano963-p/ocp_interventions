@@ -16,13 +16,22 @@ csrf = CSRFProtect()
 migrate = Migrate()
 
 
-def create_app():
+def create_app(test_config=None):
     app = Flask(__name__)
     basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
-        'DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'interventions.db'))
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config.from_mapping(
+        SECRET_KEY=os.environ.get('SECRET_KEY') or secrets.token_hex(32),
+        SQLALCHEMY_DATABASE_URI=os.environ.get(
+            'DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'interventions.db')),
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        DEMO_MODE=os.environ.get('DEMO_MODE', '0') == '1',
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE='Lax',
+        SESSION_COOKIE_SECURE=os.environ.get('SESSION_COOKIE_SECURE', '0') == '1',
+        MAX_CONTENT_LENGTH=1 * 1024 * 1024,
+    )
+    if test_config:
+        app.config.update(test_config)
 
     db.init_app(app)
     login_manager.init_app(app)
@@ -48,6 +57,22 @@ def create_app():
     app.register_blueprint(stock_bp)
     app.register_blueprint(rapports_bp)
     app.register_blueprint(suivi_bp)
+
+    @app.after_request
+    def security_headers(response):
+        response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+        response.headers.setdefault('X-Frame-Options', 'DENY')
+        response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+        response.headers.setdefault(
+            'Content-Security-Policy',
+            "default-src 'self'; img-src 'self' data: https://unpkg.com "
+            "https://*.tile.openstreetmap.org; style-src 'self' 'unsafe-inline' "
+            "https://cdn.jsdelivr.net https://unpkg.com https://fonts.googleapis.com; "
+            "font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; "
+            "connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+        )
+        return response
 
     @app.errorhandler(403)
     def forbidden(e):

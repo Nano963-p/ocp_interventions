@@ -1,6 +1,37 @@
+# Environnements et caches Python
 venv/
-__pycache__/
-*.pyc
-instance/
-interventions.db
+.venv/
+env/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Secrets et configuration locale (conserver uniquement le modèle public)
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Données et sorties locales
+instance/
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-shm
+*.db-wal
+*.log
+reports/
+
+# Éditeurs et système
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

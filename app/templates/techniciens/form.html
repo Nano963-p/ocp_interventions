@@ -8,23 +8,23 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="mb-3">
         <label class="form-label">Nom complet *</label>
-        <input type="text" name="nom" class="form-control" value="{{ t.nom if t else '' }}" required>
+        <input type="text" name="nom" class="form-control" maxlength="120" value="{{ t.nom if t else '' }}" required>
       </div>
       <div class="mb-3">
         <label class="form-label">Spécialités (séparées par des virgules)</label>
-        <input type="text" name="specialite" class="form-control"
+        <input type="text" name="specialite" class="form-control" maxlength="200" required
                value="{{ t.specialite if t else '' }}" placeholder="Ex. : Mécanique, Hydraulique">
         <small class="text-muted">Types reconnus : {{ types | join(', ') }}</small>
       </div>
       <div class="row g-3">
         <div class="col-md-6">
           <label class="form-label">Zone d'affectation</label>
-          <input type="text" name="zone" class="form-control"
+          <input type="text" name="zone" class="form-control" maxlength="120" required
                  value="{{ t.zone if t else 'Site Khouribga' }}">
         </div>
         <div class="col-md-6">
           <label class="form-label">Téléphone</label>
-          <input type="text" name="telephone" class="form-control" value="{{ t.telephone if t else '' }}">
+          <input type="text" name="telephone" class="form-control" maxlength="30" value="{{ t.telephone if t else '' }}">
         </div>
         <div class="col-md-6">
           <label class="form-label">Disponibilité</label>

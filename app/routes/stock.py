@@ -6,6 +6,7 @@ from flask import (Blueprint, flash, redirect, render_template, request,
 from .. import db
 from ..models import Piece
 from .auth import role_required
+from ..validation import (flash_errors, float_value, int_value, text_value)
 
 bp = Blueprint('stock', __name__, url_prefix='/stock')
 
@@ -19,29 +20,17 @@ def _parse_piece_form(form):
     erreurs = []
     valeurs = {}
 
-    quantite_brut = form.get('quantite', '0')
-    try:
-        valeurs['quantite'] = int(quantite_brut)
-        if valeurs['quantite'] < 0:
-            erreurs.append("La quantité ne peut pas être négative.")
-    except ValueError:
-        erreurs.append(f"Quantité invalide : « {quantite_brut} » n'est pas un nombre entier.")
-
-    seuil_brut = form.get('seuil_alerte', '5')
-    try:
-        valeurs['seuil_alerte'] = int(seuil_brut)
-        if valeurs['seuil_alerte'] < 0:
-            erreurs.append("Le seuil d'alerte ne peut pas être négatif.")
-    except ValueError:
-        erreurs.append(f"Seuil d'alerte invalide : « {seuil_brut} » n'est pas un nombre entier.")
-
-    prix_brut = form.get('prix_unitaire', '0')
-    try:
-        valeurs['prix_unitaire'] = float(prix_brut) if prix_brut else 0.0
-        if valeurs['prix_unitaire'] < 0:
-            erreurs.append("Le prix unitaire ne peut pas être négatif.")
-    except ValueError:
-        erreurs.append(f"Prix unitaire invalide : « {prix_brut} » n'est pas un nombre.")
+    valeurs['quantite'], new_errors = int_value(
+        form, 'quantite', 'La quantité', minimum=0, maximum=1000000, default=0)
+    erreurs += new_errors
+    valeurs['seuil_alerte'], new_errors = int_value(
+        form, 'seuil_alerte', "Le seuil d'alerte", minimum=0,
+        maximum=1000000, default=5)
+    erreurs += new_errors
+    valeurs['prix_unitaire'], new_errors = float_value(
+        form, 'prix_unitaire', 'Le prix unitaire', minimum=0,
+        maximum=1000000000, default=0)
+    erreurs += new_errors
 
     return valeurs, erreurs
 
@@ -59,20 +48,22 @@ def liste():
 def nouvelle():
     if request.method == 'POST':
         valeurs, erreurs = _parse_piece_form(request.form)
-        reference = request.form.get('reference', '').strip()
-
-        if not reference:
-            erreurs.append("La référence est obligatoire.")
-        elif Piece.query.filter_by(reference=reference).first():
+        nom, new_errors = text_value(request.form, 'nom', 'La désignation',
+                                     required=True, max_length=150)
+        erreurs += new_errors
+        reference, new_errors = text_value(request.form, 'reference', 'La référence',
+                                           required=True, max_length=60)
+        erreurs += new_errors
+        if reference and Piece.query.filter_by(reference=reference).first():
             erreurs.append("Cette référence existe déjà.")
 
         if erreurs:
             for e in erreurs:
                 flash(e, 'danger')
-            return render_template('stock/form.html', p=None)
+            return render_template('stock/form.html', p=None), 400
 
         p = Piece(
-            nom=request.form.get('nom', '').strip(),
+            nom=nom,
             reference=reference,
             quantite=valeurs['quantite'],
             seuil_alerte=valeurs['seuil_alerte'],
@@ -88,16 +79,19 @@ def nouvelle():
 @bp.route('/<int:piece_id>/modifier', methods=['GET', 'POST'])
 @role_required('admin', 'planificateur')
 def modifier(piece_id):
-    p = Piece.query.get_or_404(piece_id)
+    p = db.get_or_404(Piece, piece_id)
     if request.method == 'POST':
         valeurs, erreurs = _parse_piece_form(request.form)
+        nom, new_errors = text_value(request.form, 'nom', 'La désignation',
+                                     required=True, max_length=150)
+        erreurs += new_errors
 
         if erreurs:
             for e in erreurs:
                 flash(e, 'danger')
-            return render_template('stock/form.html', p=p)
+            return render_template('stock/form.html', p=p), 400
 
-        p.nom = request.form.get('nom', p.nom).strip()
+        p.nom = nom
         p.quantite = valeurs['quantite']
         p.seuil_alerte = valeurs['seuil_alerte']
         p.prix_unitaire = valeurs['prix_unitaire']
@@ -111,15 +105,16 @@ def modifier(piece_id):
 @role_required('admin', 'planificateur')
 def ajuster(piece_id):
     """Ajustement rapide de quantité (réapprovisionnement)."""
-    p = Piece.query.get_or_404(piece_id)
-    delta_brut = request.form.get('delta', '0')
-    try:
-        delta = int(delta_brut)
-    except ValueError:
-        flash(f"Valeur d'ajustement invalide : « {delta_brut} » n'est pas un nombre entier.", 'danger')
+    p = db.get_or_404(Piece, piece_id)
+    delta, errors = int_value(request.form, 'delta', "La quantité d'ajustement",
+                              minimum=1, maximum=1000000)
+    if errors:
+        flash_errors(flash, errors)
         return redirect(url_for('stock.liste'))
-
-    p.quantite = max(0, p.quantite + delta)
+    if p.quantite + delta > 1000000:
+        flash("Le stock total ne peut pas dépasser 1000000 unités.", 'danger')
+        return redirect(url_for('stock.liste'))
+    p.quantite += delta
     db.session.commit()
     flash(f"Stock de « {p.nom} » ajusté : {p.quantite} unité(s).", 'success')
     return redirect(url_for('stock.liste'))
@@ -128,7 +123,7 @@ def ajuster(piece_id):
 @bp.route('/<int:piece_id>/supprimer', methods=['POST'])
 @role_required('admin')
 def supprimer(piece_id):
-    p = Piece.query.get_or_404(piece_id)
+    p = db.get_or_404(Piece, piece_id)
     db.session.delete(p)
     db.session.commit()
     flash(f"Pièce « {p.nom} » supprimée.", 'info')

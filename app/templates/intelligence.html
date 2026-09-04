@@ -7,7 +7,7 @@
   <div class="col-12">
     <div class="card card-kpi">
       <div class="card-body">
-        <h5><i class="bi bi-exclamation-triangle text-danger"></i> Alertes intelligentes</h5>
+        <h5><i class="bi bi-exclamation-triangle text-danger"></i> Alertes par règles</h5>
         {% if alertes %}
           {% for a in alertes %}
           <div class="alert alert-{{ a.niveau }} d-flex justify-content-between align-items-center py-2 mb-2">
@@ -42,7 +42,7 @@
               </div>
               <div class="text-end">
                 <span class="badge badge-{{ r.demande.priorite }}">{{ r.demande.priorite }}</span><br>
-                <small class="text-muted">Priorité IA suggérée : <strong>{{ r.priorite_suggeree }}</strong>
+                <small class="text-muted">Priorité suggérée par règles : <strong>{{ r.priorite_suggeree }}</strong>
                   ({{ r.score_priorite }}/100)</small>
               </div>
             </div>

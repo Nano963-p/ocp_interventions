@@ -37,10 +37,11 @@ function partagerPosition() {
     <div class="value text-warning">{{ stats.nb_actives }}</div><small class="text-muted">En cours</small></div></div></div>
   <div class="col-6 col-md-2"><div class="card card-kpi"><div class="card-body text-center">
     <div class="value text-success">{{ stats.nb_terminees }}</div><small class="text-muted">Terminées</small></div></div></div>
-  <div class="col-6 col-md-2"><div class="card card-kpi"><div class="card-body text-center">
+  {% if current_user.is_planificateur %}<div class="col-6 col-md-2"><div class="card card-kpi"><div class="card-body text-center">
     <div class="value text-info">{{ stats.nb_techniciens }}</div><small class="text-muted">Techniciens</small></div></div></div>
   <div class="col-6 col-md-2"><div class="card card-kpi"><div class="card-body text-center">
     <div class="value text-danger">{{ stats.nb_pieces_alerte }}</div><small class="text-muted">Alertes stock</small></div></div></div>
+  {% endif %}
 </div>
 
 <div class="row g-3 mb-4">
@@ -86,9 +87,9 @@ function partagerPosition() {
 </div>
 
 <div class="row g-3 mt-1">
-  <div class="col-md-6">
+  {% if current_user.is_planificateur %}<div class="col-md-6">
     <div class="card card-kpi h-100"><div class="card-body">
-      <h6><i class="bi bi-bell"></i> Alertes intelligentes
+      <h6><i class="bi bi-bell"></i> Alertes par règles
         <a href="{{ url_for('main.intelligence_page') }}" class="float-end small">Tout voir →</a></h6>
       {% if alertes %}
         {% for a in alertes %}
@@ -101,8 +102,8 @@ function partagerPosition() {
         <p class="text-muted"><i class="bi bi-check-circle"></i> Aucune alerte. Situation nominale.</p>
       {% endif %}
     </div></div>
-  </div>
-  <div class="col-md-6">
+  </div>{% endif %}
+  <div class="{{ 'col-md-6' if current_user.is_planificateur else 'col-12' }}">
     <div class="card card-kpi h-100"><div class="card-body">
       <h6><i class="bi bi-clock-history"></i> Dernières demandes</h6>
       <ul class="list-group list-group-flush">

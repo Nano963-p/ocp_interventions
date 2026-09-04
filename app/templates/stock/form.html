@@ -8,23 +8,23 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="mb-3">
         <label class="form-label">Désignation *</label>
-        <input type="text" name="nom" class="form-control" value="{{ p.nom if p else '' }}" required>
+        <input type="text" name="nom" class="form-control" maxlength="150" value="{{ p.nom if p else '' }}" required>
       </div>
       {% if not p %}
       <div class="mb-3">
         <label class="form-label">Référence *</label>
-        <input type="text" name="reference" class="form-control" required placeholder="Ex. : RLT-6208">
+        <input type="text" name="reference" class="form-control" maxlength="60" required placeholder="Ex. : RLT-6208">
       </div>
       {% endif %}
       <div class="row g-3">
         <div class="col-md-4">
           <label class="form-label">Quantité</label>
-          <input type="number" name="quantite" class="form-control" min="0"
+          <input type="number" name="quantite" class="form-control" min="0" max="1000000"
                  value="{{ p.quantite if p else 0 }}">
         </div>
         <div class="col-md-4">
           <label class="form-label">Seuil d'alerte</label>
-          <input type="number" name="seuil_alerte" class="form-control" min="0"
+          <input type="number" name="seuil_alerte" class="form-control" min="0" max="1000000"
                  value="{{ p.seuil_alerte if p else 5 }}">
         </div>
         <div class="col-md-4">

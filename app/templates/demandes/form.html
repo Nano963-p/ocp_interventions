@@ -8,22 +8,22 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="mb-3">
         <label class="form-label">Titre *</label>
-        <input type="text" name="titre" class="form-control" required
+        <input type="text" name="titre" class="form-control" required maxlength="200"
                placeholder="Ex. : Panne convoyeur bande CV-12">
       </div>
       <div class="mb-3">
         <label class="form-label">Description</label>
-        <textarea name="description" class="form-control" rows="3"
+        <textarea name="description" class="form-control" rows="3" maxlength="5000"
                   placeholder="Décrivez le problème (mots-clés comme « panne », « urgence », « fuite »… aident l'analyse automatique)"></textarea>
       </div>
       <div class="row g-3">
         <div class="col-md-6">
-          <label class="form-label">Client / Service demandeur</label>
-          <input type="text" name="client" class="form-control" placeholder="Ex. : Atelier Lavage">
+          <label class="form-label">Client / Service demandeur *</label>
+          <input type="text" name="client" class="form-control" maxlength="120" required placeholder="Ex. : Atelier Lavage">
         </div>
         <div class="col-md-6">
-          <label class="form-label">Localisation</label>
-          <input type="text" name="localisation" class="form-control" placeholder="Ex. : Zone Nord">
+          <label class="form-label">Localisation *</label>
+          <input type="text" name="localisation" class="form-control" maxlength="120" required placeholder="Ex. : Zone Nord">
         </div>
         <div class="col-md-6">
           <label class="form-label">Type d'intervention</label>
@@ -44,7 +44,7 @@
         <div class="col-md-6">
           <label class="form-label">Priorité</label>
           <select name="priorite" class="form-select">
-            <option value="auto" selected>🤖 Automatique (analyse intelligente)</option>
+            <option value="auto" selected>⚖️ Automatique (règles pondérées)</option>
             <option>Critique</option><option>Haute</option>
             <option>Moyenne</option><option>Basse</option>
           </select>

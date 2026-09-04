@@ -1,13 +1,21 @@
 # -*- coding: utf-8 -*-
-"""Données de démonstration chargées au premier démarrage."""
-from datetime import date, datetime, timedelta
+"""Jeu entièrement fictif/synthétique, réservé au mode de démonstration local.
+
+Les noms, téléphones, lieux, équipements, interventions et rapports ci-dessous
+ne décrivent aucune personne, installation ou opération réelle d'OCP.
+"""
+from datetime import date, timedelta
+
+from flask import current_app
 
 from . import db
 from .models import (Demande, Intervention, Message, Piece, Technicien, User,
-                     UtilisationPiece)
+                     UtilisationPiece, utcnow)
 
 
 def seed_if_empty():
+    if not current_app.config.get('DEMO_MODE'):
+        raise RuntimeError("Le seed synthétique nécessite DEMO_MODE=1.")
     if User.query.count() > 0:
         return
 
@@ -55,8 +63,9 @@ def seed_if_empty():
                    cree_il_y_a, echeance_dans=None):
         d = Demande(titre=titre, description=desc, client=client, localisation=loc,
                     type_intervention=type_i, impact=impact, priorite=prio,
-                    statut=statut, date_creation=datetime.utcnow() - timedelta(days=cree_il_y_a),
-                    date_echeance=(today + timedelta(days=echeance_dans)) if echeance_dans is not None else None)
+                    statut=statut, date_creation=utcnow() - timedelta(days=cree_il_y_a),
+                    date_echeance=(today + timedelta(days=echeance_dans)) if echeance_dans is not None else None,
+                    createur_id=admin.id)
         db.session.add(d)
         db.session.flush()
         return d
@@ -67,7 +76,7 @@ def seed_if_empty():
                           date_planifiee=today - timedelta(days=planifiee_il_y_a),
                           statut=statut)
         if statut in ('En cours', 'Terminée'):
-            iv.date_debut = datetime.utcnow() - timedelta(days=planifiee_il_y_a, hours=2)
+            iv.date_debut = utcnow() - timedelta(days=planifiee_il_y_a, hours=2)
         if statut == 'Terminée':
             iv.date_fin = iv.date_debut + timedelta(hours=duree_h or 3)
             iv.observations = observations_txt or 'Intervention réalisée conformément au planning.'
@@ -280,7 +289,7 @@ def seed_if_empty():
         rapport_txt="Session de formation de 3h organisée avec démonstration pratique des "
                     "principales fonctionnalités. Support de formation distribué aux participants. "
                     "Retours positifs recueillis en fin de session.")
-    
+
 
     # En cours / planifiées
     d7 = mk_demande('Surchauffe moteur pompe P-114', 'Surchauffe alarme thermique moteur principal.',
@@ -311,13 +320,12 @@ def seed_if_empty():
 
     # Messages de démonstration
     db.session.add_all([
-        Message(intervention_id=iv1.id, user_id=2,
+        Message(intervention_id=iv1.id, user_id=planif.id,
                 contenu="Merci de vérifier l'alignement avant remise en route.",
-                date=datetime.utcnow() - timedelta(days=73, hours=5)),
-        Message(intervention_id=iv1.id, user_id=3,
+                date=utcnow() - timedelta(days=73, hours=5)),
+        Message(intervention_id=iv1.id, user_id=tech.id,
                 contenu="Alignement contrôlé, essai de rotation OK. Intervention terminée.",
-                date=datetime.utcnow() - timedelta(days=73, hours=3)),
+                date=utcnow() - timedelta(days=73, hours=3)),
     ])
 
     db.session.commit()
-    

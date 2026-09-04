@@ -37,7 +37,7 @@
 
         {% if analyse %}
         <div class="alert alert-info">
-          <strong><i class="bi bi-robot"></i> Analyse intelligente :</strong>
+          <strong><i class="bi bi-calculator"></i> Score par règles pondérées :</strong>
           priorité suggérée <strong>{{ analyse.priorite }}</strong> (score {{ analyse.score }}/100)
           <ul class="mb-0 mt-1 small">
             {% for r in analyse.raisons %}<li>{{ r }}</li>{% endfor %}
@@ -64,7 +64,7 @@
   <div class="col-lg-7">
     <div class="card card-kpi h-100">
       <div class="card-body">
-        <h5><i class="bi bi-robot text-success"></i> Suggestion d'affectation intelligente</h5>
+        <h5><i class="bi bi-calculator text-success"></i> Suggestion d'affectation multicritère</h5>
         <p class="text-muted small">Classement automatique des techniciens : compétences (40),
           disponibilité (25), charge (25), zone (10).</p>
         {% if current_user.is_planificateur %}
@@ -121,10 +121,13 @@
         observations terrain et rapports techniques.
       </p>
       {% if cas_similaires %}
-        <a href="{{ url_for('demandes.synthese_ia', demande_id=demande.id) }}"
-           class="btn btn-sm btn-outline-primary mb-3">
-          <i class="bi bi-stars"></i> Générer une synthèse IA à partir de ces cas
-        </a>
+        <form method="post" action="{{ url_for('demandes.synthese_ia', demande_id=demande.id) }}"
+              class="mb-3">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-stars"></i> Générer une synthèse IA à partir de ces cas
+          </button>
+        </form>
 
         {% if synthese_ia %}
         <div class="alert alert-primary">

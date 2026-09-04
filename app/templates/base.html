@@ -46,8 +46,10 @@
   <hr class="mx-3" style="border-color:#1f4d33">
   <a href="{{ url_for('main.dashboard') }}" class="{{ 'active' if request.endpoint == 'main.dashboard' }}">
     <i class="bi bi-speedometer2"></i> Tableau de bord</a>
+  {% if current_user.is_planificateur %}
   <a href="{{ url_for('main.intelligence_page') }}" class="{{ 'active' if request.endpoint == 'main.intelligence_page' }}">
     <i class="bi bi-robot"></i> Aide à la décision</a>
+  {% endif %}
   <a href="{{ url_for('demandes.liste') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('demandes') }}">
     <i class="bi bi-clipboard2-pulse"></i> Demandes</a>
   <a href="{{ url_for('interventions.liste') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('interventions') }}">
@@ -58,10 +60,12 @@
   <a href="{{ url_for('stock.liste') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('stock') }}">
     <i class="bi bi-box-seam"></i> Stock pièces</a>
   {% endif %}
+  {% if current_user.is_planificateur %}
   <a href="{{ url_for('rapports.global_report') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('rapports') }}">
     <i class="bi bi-file-earmark-bar-graph"></i> Rapports</a>
   <a href="{{ url_for('techniciens.carte') }}" class="{{ 'active' if request.endpoint == 'techniciens.carte' }}">
     <i class="bi bi-geo-alt"></i> Carte techniciens</a>
+  {% endif %}
 </nav>
 {% endif %}
 
@@ -72,8 +76,11 @@
     <div class="text-muted small">
       <i class="bi bi-person-circle"></i> {{ current_user.nom }}
       <span class="badge text-bg-success ms-1">{{ current_user.role }}</span>
-      <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-outline-danger ms-2">
-        <i class="bi bi-box-arrow-right"></i> Déconnexion</a>
+      <form method="post" action="{{ url_for('auth.logout') }}" class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-sm btn-outline-danger ms-2">
+          <i class="bi bi-box-arrow-right"></i> Déconnexion</button>
+      </form>
     </div>
   </div>
   {% endif %}

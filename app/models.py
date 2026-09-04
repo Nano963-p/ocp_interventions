@@ -2,12 +2,17 @@
 """Modèles de données – Gestion des Interventions."""
 import uuid
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from . import db, login_manager
+
+
+def utcnow():
+    """Return naive UTC for the existing database schema."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 PRIORITES = ['Basse', 'Moyenne', 'Haute', 'Critique']
 STATUTS_DEMANDE = ['Nouvelle', 'Planifiée', 'En cours', 'Terminée', 'Annulée']
@@ -26,6 +31,7 @@ class User(UserMixin, db.Model):
 
     technicien = db.relationship('Technicien', backref='compte', uselist=False)
     messages = db.relationship('Message', backref='auteur', lazy=True)
+    demandes_creees = db.relationship('Demande', backref='createur', lazy=True)
 
     def set_password(self, pwd):
         self.password_hash = generate_password_hash(pwd)
@@ -44,7 +50,10 @@ class User(UserMixin, db.Model):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    try:
+        return db.session.get(User, int(user_id))
+    except (TypeError, ValueError):
+        return None
 
 
 class Technicien(db.Model):
@@ -83,10 +92,11 @@ class Demande(db.Model):
     impact = db.Column(db.Integer, nullable=False, default=3)  # 1 (faible) à 5 (bloquant)
     priorite = db.Column(db.String(20), nullable=False, default='Moyenne')
     statut = db.Column(db.String(20), nullable=False, default='Nouvelle')
-    date_creation = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    date_creation = db.Column(db.DateTime, nullable=False, default=utcnow)
     date_echeance = db.Column(db.Date, nullable=True)
     token_suivi = db.Column(db.String(36), unique=True, nullable=False,
                         default=lambda: str(uuid.uuid4()))
+    createur_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
     intervention = db.relationship('Intervention', backref='demande', uselist=False)
 
@@ -151,7 +161,7 @@ class UtilisationPiece(db.Model):
     intervention_id = db.Column(db.Integer, db.ForeignKey('intervention.id'), nullable=False)
     piece_id = db.Column(db.Integer, db.ForeignKey('piece.id'), nullable=False)
     quantite = db.Column(db.Integer, nullable=False, default=1)
-    date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    date = db.Column(db.DateTime, nullable=False, default=utcnow)
 
 
 class Message(db.Model):
@@ -160,4 +170,4 @@ class Message(db.Model):
     intervention_id = db.Column(db.Integer, db.ForeignKey('intervention.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     contenu = db.Column(db.Text, nullable=False)
-    date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    date = db.Column(db.DateTime, nullable=False, default=utcnow)

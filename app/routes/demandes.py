@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
-"""Gestion des demandes d'intervention (création, priorisation IA, planification)."""
-from datetime import datetime
-
-from flask import (Blueprint, flash, redirect, render_template, request,
+"""Gestion des demandes (création, score de priorité par règles, planification)."""
+from flask import (Blueprint, abort, flash, redirect, render_template, request,
                    url_for)
-from flask_login import login_required
+from flask_login import current_user, login_required
+from sqlalchemy import or_
 
 from .. import db, intelligence
 from ..models import Demande, Intervention, Technicien, TYPES_INTERVENTION
-from .auth import role_required
+from .auth import can_access_demande, role_required
+from ..validation import (choice_value, date_value, flash_errors, int_value,
+                          text_value)
 
 bp = Blueprint('demandes', __name__, url_prefix='/demandes')
 
@@ -19,10 +20,17 @@ def liste():
     query = Demande.query
     statut = request.args.get('statut', '')
     priorite = request.args.get('priorite', '')
-    if statut:
-        query = query.filter_by(statut=statut)
-    if priorite:
-        query = query.filter_by(priorite=priorite)
+    if current_user.role == 'technicien':
+        if not current_user.technicien_id:
+            query = query.filter(Demande.createur_id == current_user.id)
+        else:
+            query = query.outerjoin(Intervention).filter(or_(
+                Demande.createur_id == current_user.id,
+                Intervention.technicien_id == current_user.technicien_id))
+    if statut in ('Nouvelle', 'Planifiée', 'En cours', 'Terminée', 'Annulée'):
+        query = query.filter(Demande.statut == statut)
+    if priorite in ('Basse', 'Moyenne', 'Haute', 'Critique'):
+        query = query.filter(Demande.priorite == priorite)
     demandes = query.order_by(Demande.date_creation.desc()).all()
     return render_template('demandes/liste.html', demandes=demandes,
                            statut=statut, priorite=priorite)
@@ -32,32 +40,52 @@ def liste():
 @login_required
 def nouvelle():
     if request.method == 'POST':
-        titre = request.form.get('titre', '').strip()
-        if not titre:
-            flash("Le titre est obligatoire.", 'danger')
-            return redirect(url_for('demandes.nouvelle'))
+        titre, errors = text_value(request.form, 'titre', 'Le titre', required=True,
+                                   max_length=200)
+        description, new_errors = text_value(
+            request.form, 'description', 'La description', max_length=5000)
+        errors += new_errors
+        client, new_errors = text_value(request.form, 'client', 'Le client/service',
+                                        required=True, max_length=120)
+        errors += new_errors
+        localisation, new_errors = text_value(
+            request.form, 'localisation', 'La localisation', required=True,
+            max_length=120)
+        errors += new_errors
+        date_echeance, new_errors = date_value(
+            request.form, 'date_echeance', "La date d'échéance")
+        errors += new_errors
+        impact, new_errors = int_value(request.form, 'impact', "L'impact",
+                                       minimum=1, maximum=5, default=3)
+        errors += new_errors
+        priorite, new_errors = choice_value(
+            request.form, 'priorite', 'La priorité',
+            ('auto', 'Basse', 'Moyenne', 'Haute', 'Critique'), default='auto')
+        errors += new_errors
+        type_intervention, new_errors = choice_value(
+            request.form, 'type_intervention', "Le type d'intervention",
+            TYPES_INTERVENTION, default='Mécanique')
+        errors += new_errors
+        if errors:
+            flash_errors(flash, errors)
+            return render_template('demandes/form.html', types=TYPES_INTERVENTION), 400
 
-        date_echeance = None
-        if request.form.get('date_echeance'):
-            date_echeance = datetime.strptime(request.form['date_echeance'], '%Y-%m-%d').date()
-
-        impact = int(request.form.get('impact', 3))
-        priorite = request.form.get('priorite', 'auto')
         analyse = None
         if priorite == 'auto':
             priorite, score, raisons = intelligence.analyser_priorite(
-                titre, request.form.get('description', ''), impact, date_echeance)
+                titre, description, impact, date_echeance)
             analyse = (priorite, score, raisons)
 
         d = Demande(
             titre=titre,
-            description=request.form.get('description', '').strip(),
-            client=request.form.get('client', '').strip(),
-            localisation=request.form.get('localisation', '').strip(),
-            type_intervention=request.form.get('type_intervention', 'Mécanique'),
+            description=description,
+            client=client,
+            localisation=localisation,
+            type_intervention=type_intervention,
             impact=impact,
             priorite=priorite,
             date_echeance=date_echeance,
+            createur_id=current_user.id,
         )
         db.session.add(d)
         db.session.commit()
@@ -73,11 +101,13 @@ def nouvelle():
 @bp.route('/<int:demande_id>')
 @login_required
 def detail(demande_id):
-    d = Demande.query.get_or_404(demande_id)
+    d = db.get_or_404(Demande, demande_id)
+    if not can_access_demande(d):
+        abort(403)
     suggestions = []
     analyse = None
     cas_similaires = []
-    if d.statut == 'Nouvelle':
+    if d.statut == 'Nouvelle' and current_user.is_planificateur:
         suggestions = intelligence.scorer_techniciens(d)
         prio, score, raisons = intelligence.analyser_priorite(
             d.titre, d.description, d.impact, d.date_echeance)
@@ -91,13 +121,24 @@ def detail(demande_id):
 @bp.route('/<int:demande_id>/planifier', methods=['POST'])
 @role_required('admin', 'planificateur')
 def planifier(demande_id):
-    d = Demande.query.get_or_404(demande_id)
+    d = db.get_or_404(Demande, demande_id)
     if d.intervention:
         flash("Cette demande est déjà planifiée.", 'warning')
         return redirect(url_for('demandes.detail', demande_id=d.id))
 
-    technicien = Technicien.query.get_or_404(int(request.form['technicien_id']))
-    date_planifiee = datetime.strptime(request.form['date_planifiee'], '%Y-%m-%d').date()
+    technicien_id, errors = int_value(
+        request.form, 'technicien_id', 'Le technicien', minimum=1)
+    date_planifiee, new_errors = date_value(
+        request.form, 'date_planifiee', 'La date planifiée', required=True)
+    errors += new_errors
+    technicien = db.session.get(Technicien, technicien_id) if technicien_id else None
+    if technicien_id and technicien is None:
+        errors.append("Le technicien sélectionné n'existe pas.")
+    if d.statut != 'Nouvelle':
+        errors.append("Seule une demande nouvelle peut être planifiée.")
+    if errors:
+        flash_errors(flash, errors)
+        return redirect(url_for('demandes.detail', demande_id=d.id))
 
     iv = Intervention(demande_id=d.id, technicien_id=technicien.id,
                       date_planifiee=date_planifiee, statut='Planifiée')
@@ -112,7 +153,7 @@ def planifier(demande_id):
 @bp.route('/<int:demande_id>/annuler', methods=['POST'])
 @role_required('admin', 'planificateur')
 def annuler(demande_id):
-    d = Demande.query.get_or_404(demande_id)
+    d = db.get_or_404(Demande, demande_id)
     d.statut = 'Annulée'
     if d.intervention:
         d.intervention.statut = 'Annulée'
@@ -121,10 +162,10 @@ def annuler(demande_id):
     return redirect(url_for('demandes.liste'))
 
 
-@bp.route('/<int:demande_id>/synthese-ia', methods=['GET'])
-@login_required
+@bp.route('/<int:demande_id>/synthese-ia', methods=['POST'])
+@role_required('admin', 'planificateur')
 def synthese_ia(demande_id):
-    d = Demande.query.get_or_404(demande_id)
+    d = db.get_or_404(Demande, demande_id)
     cas_similaires = intelligence.rechercher_cas_similaires(d)
     synthese = intelligence.synthetiser_recommandation_ia(d, cas_similaires)
 

@@ -1,21 +1,28 @@
 <div align="center">
 
-# 🔧 Gestion des Interventions — OCP Khouribga
+# 🔧 Gestion des Interventions — prototype académique
 
 **Plateforme de planification, suivi et pilotage des interventions de maintenance**
 
-*Service Informatique — Digital Corner OCP Khouribga*
+*Projet étudiant inspiré d'un stage d'observation au Digital Corner OCP Khouribga*
 
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat&logo=python&logoColor=white)
 ![Flask](https://img.shields.io/badge/Flask-3.0-000000?style=flat&logo=flask&logoColor=white)
 ![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-ORM-D71F00?style=flat)
-![scikit-learn](https://img.shields.io/badge/scikit--learn-ML-F7931E?style=flat)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-recherche_TF--IDF-F7931E?style=flat)
 ![License](https://img.shields.io/badge/Licence-Académique-lightgrey?style=flat)
 ![Status](https://img.shields.io/badge/Statut-Actif-success?style=flat)
 
 </div>
 
 ---
+
+> [!IMPORTANT]
+> Ce dépôt est un prototype académique non officiel. Il n'est ni édité, ni
+> approuvé, ni exploité par le Groupe OCP. Tous les noms, numéros de téléphone,
+> lieux, équipements, demandes, interventions, observations, coûts et rapports
+> fournis par le mode démo sont entièrement fictifs et synthétiques. Ils ne
+> décrivent aucune personne, installation ou opération réelle.
 
 ## Sommaire
 
@@ -32,6 +39,7 @@
 - [Configuration](#configuration)
 - [Base de données et migrations](#base-de-données-et-migrations)
 - [Lancement](#lancement)
+- [Tests](#tests)
 - [Comptes de démonstration](#comptes-de-démonstration)
 - [Rôles et permissions](#rôles-et-permissions)
 - [Structure du projet](#structure-du-projet)
@@ -45,7 +53,7 @@
 
 ## Contexte du projet
 
-Ce projet a été développé dans le cadre d'un stage d'observation au sein du Digital Corner OCP Khouribga, service informatique du Groupe OCP. Il répond à un besoin identifié sur le terrain : faciliter la gestion des demandes d'intervention, améliorer la planification des activités des techniciens et optimiser le suivi des opérations de maintenance.
+Ce projet a été développé comme exercice académique à la suite d'un stage d'observation au Digital Corner OCP Khouribga. Il explore un scénario fictif de gestion des demandes d'intervention, de planification des techniciens et de suivi des opérations de maintenance.
 
 L'application couvre l'ensemble du cycle de vie d'une intervention, de la demande initiale jusqu'à la clôture et l'archivage du rapport, en intégrant une couche d'aide à la décision multicritère et un moteur de recherche de cas similaires basé sur l'historique des interventions.
 
@@ -60,7 +68,7 @@ L'application est organisée autour de six grands blocs fonctionnels :
 3. **Suivi opérationnel** — statuts, observations, communication terrain/bureau
 4. **Gestion des stocks** — pièces détachées consommées pendant les interventions
 5. **Pilotage** — tableau de bord, alertes, rapports, prévisions
-6. **Aide à la décision augmentée** — recherche de cas similaires et synthèse IA ancrée sur l'historique réel
+6. **Aide à la décision augmentée** — recherche de cas similaires dans l'historique synthétique et synthèse LLM fondée sur les cas retrouvés
 
 Le tout est servi par une interface web unique, avec un accès différencié selon le rôle de la personne connectée.
 
@@ -74,7 +82,7 @@ Le tout est servi par une interface web unique, avec un accès différencié sel
 - **Priorisation automatique** : un score sur 100 est calculé à partir de mots-clés d'urgence détectés dans le texte, de l'impact déclaré et de la proximité de l'échéance
 - La création d'une demande est ouverte à tout utilisateur connecté ; seule la **planification** (affectation d'un technicien et d'une date) reste réservée à l'administrateur et au planificateur
 
-### Planification intelligente
+### Planification par règles pondérées
 Pour chaque demande, le système calcule un score de pertinence pour chaque technicien disponible, basé sur :
 - la correspondance de compétences (40 points)
 - la disponibilité déclarée (25 points)
@@ -83,7 +91,7 @@ Pour chaque demande, le système calcule un score de pertinence pour chaque tech
 
 Le planificateur choisit librement, en s'appuyant sur ce classement.
 
-### Suivi en temps réel
+### Suivi opérationnel des états
 - Cycle de statut d'une intervention : Planifiée → En cours → Terminée (ou Annulée à tout moment)
 - Réaffectation possible d'un technicien à un autre en cours de route
 - Observations terrain et rapport technique rédigés directement par le technicien
@@ -97,7 +105,7 @@ Le planificateur choisit librement, en s'appuyant sur ce classement.
 - Prélèvement de pièces directement depuis la fiche intervention, uniquement quand l'intervention est En cours, avec possibilité d'annuler un prélèvement erroné
 - Validation des champs numériques des formulaires
 
-### Alertes intelligentes
+### Alertes déterministes
 Générées en continu à partir de l'état réel du système :
 - Stock sous le seuil d'alerte
 - Demande non planifiée dont l'échéance approche (risque SLA)
@@ -116,7 +124,7 @@ Générées en continu à partir de l'état réel du système :
 
 ### Moteur de cas similaires (RAG)
 - Recherche, parmi les interventions terminées, des cas les plus proches textuellement d'une nouvelle demande (vectorisation TF-IDF + similarité cosinus, 100 % local)
-- Synthèse en langage naturel générée par un modèle de langage, **ancrée exclusivement** sur les cas réellement retrouvés (citation explicite des sources, aucune invention d'information)
+- Synthèse en langage naturel générée par un modèle de langage à partir des cas retrouvés (contexte RAG avec citation des cas ; le résultat reste à vérifier humainement)
 
 ---
 
@@ -155,7 +163,7 @@ Générées en continu à partir de l'état réel du système :
 ## Flux applicatif détaillé
 
 1. **Création** — une demande est créée par n'importe quel utilisateur connecté
-2. **Analyse IA** — le système calcule une priorité suggérée (score sur 100) et recherche des cas similaires dans l'historique
+2. **Analyse par règles** — le système calcule une priorité suggérée (score pondéré sur 100) et recherche des cas similaires dans l'historique
 3. **Suggestion** — le système classe les techniciens disponibles pour cette demande
 4. **Planification** — le planificateur choisit un technicien et une date ; une intervention est créée
 5. **Exécution** — le technicien passe l'intervention "En cours", prélève des pièces, échange des messages, rédige ses observations
@@ -203,14 +211,14 @@ Le fichier `app/intelligence.py` centralise la logique décisionnelle sous forme
 
 ## Le moteur de cas similaires (RAG)
 
-En complément du scoring par règles, un module de type *Retrieval-Augmented Generation* aide le planificateur à s'appuyer sur l'historique réel des interventions.
+En complément du scoring par règles, un module de type *Retrieval-Augmented Generation* aide le planificateur à s'appuyer sur l'historique disponible (entièrement synthétique dans le mode démo).
 
 | Fonction | Rôle | Dépendance réseau |
 |---|---|---|
 | `rechercher_cas_similaires()` | Recherche les interventions terminées les plus proches textuellement (TF-IDF + similarité cosinus) | Aucune — calcul 100 % local |
 | `synthetiser_recommandation_ia()` | Génère une synthèse en langage naturel, ancrée exclusivement sur les cas retrouvés, avec citation explicite des sources | Oui (API GroqCloud) — avec repli gracieux si indisponible |
 
-**Principe de robustesse :** la synthèse IA n'est jamais générée sans preuves — si aucun cas similaire n'est trouvé localement, aucun appel au modèle de langage n'est effectué. Si le service de synthèse est indisponible, les cas similaires bruts restent affichés au planificateur.
+**Principe de robustesse :** aucun appel au modèle de langage n'est effectué si la recherche locale ne retourne aucun cas. Les cas retrouvés servent de contexte, mais la synthèse demeure une sortie probabiliste à contrôler humainement. Si le service est indisponible, les cas similaires bruts restent affichés.
 
 ---
 
@@ -256,9 +264,11 @@ cp .env.example .env
 | `SECRET_KEY` | Clé secrète Flask, utilisée pour signer les sessions et les tokens CSRF | générée aléatoirement à chaque démarrage |
 | `DATABASE_URL` | URI de connexion à la base de données | `sqlite:///interventions.db` |
 | `FLASK_DEBUG` | Active le débogueur interactif Flask (1 ou 0) | 0 |
+| `SESSION_COOKIE_SECURE` | N'envoie le cookie de session qu'en HTTPS | 0 en local, 1 en déploiement HTTPS |
+| `DEMO_MODE` | Autorise le chargement du jeu synthétique et des comptes démo | 0 |
 | `GROQ_API_KEY` | Clé API GroqCloud, nécessaire pour la synthèse IA du moteur de cas similaires (gratuite sur console.groq.com) | aucune — la fonctionnalité de synthèse se désactive proprement si absente |
 
-> **Important** : en production ou pour toute démonstration partagée, définissez toujours `SECRET_KEY` explicitement. Ne laissez jamais `FLASK_DEBUG=1` activé en dehors d'un débogage local. La clé `GROQ_API_KEY` doit être exportée dans le même terminal que celui utilisé pour lancer `python run.py`.
+> **Important** : définissez toujours `SECRET_KEY` explicitement hors développement, utilisez `SESSION_COOKIE_SECURE=1` derrière HTTPS, et ne laissez jamais `FLASK_DEBUG=1` ou `DEMO_MODE=1` sur un service accessible au public. Ne commitez jamais `.env` ni une clé API.
 
 ---
 
@@ -287,7 +297,7 @@ flask db migrate -m "description du changement"
 flask db upgrade
 ```
 
-> **Note technique** : le seed de données de démonstration (`app/seed.py`) n'est déclenché que par `python run.py`, jamais par les commandes `flask db`. Le jeu de données inclut 18 interventions terminées réparties en 5 familles de pannes (mécanique, hydraulique, électrique, instrumentation, informatique) avec des observations et rapports textuellement variés, conçues pour démontrer le moteur de cas similaires.
+> **Note technique** : le seed entièrement synthétique (`app/seed.py`) n'est déclenché par `python run.py` que si `DEMO_MODE=1`; il ne l'est jamais par les commandes `flask db`. Ses identités, téléphones, lieux, équipements et récits sont fictifs et servent uniquement à démontrer le moteur de cas similaires.
 
 ---
 
@@ -295,12 +305,13 @@ flask db upgrade
 
 ```bash
 export GROQ_API_KEY=ta-cle-groq   # optionnel, pour activer la synthèse IA
+export DEMO_MODE=1                # local uniquement : charge les données synthétiques
 python run.py
 ```
 
 L'application est accessible sur `http://127.0.0.1:5000`.
 
-Au premier lancement, si la base est vide, des données de démonstration sont automatiquement injectées.
+Avec `DEMO_MODE=1`, des données synthétiques sont injectées si la base est vide. Sans ce mode, aucun compte ou jeu de données n'est créé automatiquement.
 
 ### Avec Docker
 
@@ -311,7 +322,24 @@ docker run -p 5000:5000 --env-file .env ocp-interventions
 
 ---
 
+## Tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+La suite couvre notamment les frontières de rôle et de propriété, la validation
+des entrées, la confidentialité du suivi public, les transitions d'état, le
+scoring pondéré, la recherche TF-IDF et le repli lorsque Groq est désactivé.
+
+---
+
 ## Comptes de démonstration
+
+Ces comptes faibles et publiquement documentés existent uniquement lorsque le
+jeu synthétique est chargé avec `DEMO_MODE=1`. N'activez jamais ce mode sur un
+service accessible au public.
 
 | Rôle | Identifiant | Mot de passe | Droits |
 |---|---|---|---|
@@ -334,7 +362,8 @@ docker run -p 5000:5000 --env-file .env ocp-interventions
 | Voir ou modifier ses propres interventions | ✅ | ✅ | ✅ |
 | Voir les interventions d'un autre technicien | ✅ | ✅ | ❌ |
 | Prélever une pièce sur une intervention | ✅ | ✅ | ✅ si assigné |
-| Consulter les rapports | ✅ | ✅ | ✅ |
+| Consulter le rapport d'une intervention autorisée | ✅ | ✅ | ✅ si assigné |
+| Consulter le rapport global | ✅ | ✅ | ❌ |
 
 ---
 
@@ -375,7 +404,8 @@ docker run -p 5000:5000 --env-file .env ocp-interventions
 | `/demandes/nouvelle` | GET, POST | Création d'une demande |
 | `/demandes/<id>` | GET | Détail, suggestions de techniciens et cas similaires |
 | `/demandes/<id>/planifier` | POST | Planification |
-| `/demandes/<id>/synthese-ia` | GET | Génération de la synthèse IA ancrée sur les cas similaires |
+| `/demandes/<id>/synthese-ia` | POST | Synthèse LLM avec contexte fourni par les cas similaires |
+| `/logout` | POST | Déconnexion protégée par CSRF |
 | `/interventions/<id>` | GET | Suivi d'une intervention |
 | `/interventions/<id>/statut` | POST | Changement de statut |
 | `/interventions/<id>/reaffecter` | POST | Réaffectation de technicien |
@@ -394,10 +424,15 @@ docker run -p 5000:5000 --env-file .env ocp-interventions
 - Mots de passe hachés avec Werkzeug, jamais stockés en clair
 - Protection CSRF sur tous les formulaires via Flask-WTF
 - Contrôle d'accès par rôle sur chaque route sensible
-- Un technicien ne peut agir que sur ses propres interventions, avec réponse HTTP 403 explicite
+- Un technicien ne voit que les demandes qu'il a créées ou les interventions qui lui sont assignées
+- Les rapports globaux, la carte et le centre de décision sont réservés aux rôles de planification
+- Déconnexion et synthèse LLM utilisent POST avec protection CSRF
+- Validation bornée des identifiants, dates, quantités, coordonnées GPS, états et textes
+- Limitation locale des tentatives de connexion répétées
 - Pages d'erreur 403 et 404 personnalisées
 - Le lien de suivi client repose sur un token UUID non devinable
-- La synthèse IA est strictement ancrée sur des données réelles de la base, limitant le risque de génération d'informations inventées (hallucination)
+- La page de suivi public est non indexable/non mise en cache et n'expose aucun rapport interne, message, coût, GPS ou identité de technicien
+- La synthèse LLM utilise les cas retrouvés comme contexte RAG. Ce cadrage réduit, sans supprimer, le risque d'hallucination ou d'injection d'instructions
 
 ---
 
@@ -423,7 +458,7 @@ Vérifiez le seuil minimal et le paramètre `ngram_range` dans `rechercher_cas_s
 - Le suivi client se fait par lien à token, sans compte ni authentification dédiée
 - Le module d'aide à la décision principal repose sur des règles pondérées explicites, et non sur un modèle entraîné
 - Le moteur de cas similaires utilise TF-IDF plutôt que des embeddings sémantiques, pour des raisons de robustesse et d'explicabilité sur un petit corpus ; une évolution vers des embeddings deviendrait pertinente avec un historique plus volumineux
-- Aucun test automatisé n'est encore en place
+- La limitation des connexions est conservée en mémoire du processus ; un déploiement multi-instance doit utiliser un stockage partagé
 - Pas de notification push ou email lors des alertes critiques
 
 ---

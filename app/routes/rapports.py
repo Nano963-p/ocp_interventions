@@ -3,12 +3,13 @@
 from datetime import datetime
 from io import BytesIO
 
-from flask import Blueprint, Response, flash, redirect, render_template, url_for
+from flask import Blueprint, Response, abort, flash, redirect, render_template, url_for
 from flask_login import login_required
 from xhtml2pdf import pisa
 
-from .. import intelligence
+from .. import db, intelligence
 from ..models import Intervention
+from .auth import can_access_intervention, role_required
 
 bp = Blueprint('rapports', __name__, url_prefix='/rapports')
 
@@ -24,7 +25,7 @@ def _generer_pdf(template_name, **context):
 
 
 @bp.route('/')
-@login_required
+@role_required('admin', 'planificateur')
 def global_report():
     terminees = (Intervention.query.filter_by(statut='Terminée')
                  .order_by(Intervention.date_fin.desc()).all())
@@ -35,7 +36,7 @@ def global_report():
 
 
 @bp.route('/pdf')
-@login_required
+@role_required('admin', 'planificateur')
 def global_report_pdf():
     terminees = (Intervention.query.filter_by(statut='Terminée')
                  .order_by(Intervention.date_fin.desc()).all())
@@ -55,14 +56,18 @@ def global_report_pdf():
 @bp.route('/intervention/<int:intervention_id>')
 @login_required
 def intervention_report(intervention_id):
-    iv = Intervention.query.get_or_404(intervention_id)
+    iv = db.get_or_404(Intervention, intervention_id)
+    if not can_access_intervention(iv):
+        abort(403)
     return render_template('rapports/intervention.html', iv=iv)
 
 
 @bp.route('/intervention/<int:intervention_id>/pdf')
 @login_required
 def intervention_report_pdf(intervention_id):
-    iv = Intervention.query.get_or_404(intervention_id)
+    iv = db.get_or_404(Intervention, intervention_id)
+    if not can_access_intervention(iv):
+        abort(403)
     pdf_bytes = _generer_pdf('rapports/intervention_pdf.html', iv=iv)
     if pdf_bytes is None:
         flash("Erreur lors de la génération du PDF.", 'danger')
